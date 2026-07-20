@@ -1,0 +1,2039 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Kletterwald – Dashboard</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f5f7;--card:#fff;--border:rgba(0,0,0,.1);--text:#1a1a1a;--muted:#6b7280;
+  --accent:#e9ebef;--primary:#030213;--pfg:#fff;--dest:#d4183d;--radius:10px;--ibg:#f3f3f5;
+  --grbg:#f0fdf4;--grbr:#bbf7d0;--grtx:#166534;--grsb:#16a34a;
+  --blbg:#eff6ff;--blbr:#bfdbfe;--bltx:#1d4ed8;--blsb:#2563eb;
+  --rdbg:#fef2f2;--rdbr:#fecaca;--rdtx:#991b1b;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── HEADER ── */
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:0 32px;height:60px;display:flex;align-items:center;position:sticky;top:0;z-index:20}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icons{display:flex;align-items:center}
+.logo-icon{width:30px;height:30px;background:var(--primary);border-radius:7px;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:17px;height:17px;color:#fff}
+.logo-name{font-size:15px;font-weight:700;letter-spacing:-.01em}
+.logo-sub{font-size:11px;color:var(--muted);font-weight:500}
+
+/* ── MAIN ── */
+.main{max-width:1100px;margin:0 auto;padding:40px 32px 60px}
+.page-title{margin-bottom:6px;font-size:26px;font-weight:700;letter-spacing:-.02em}
+.page-sub{font-size:13px;color:var(--muted);margin-bottom:32px}
+
+/* ── PARK GRID ── */
+.park-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:900px){.park-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:580px){.park-grid{grid-template-columns:1fr}}
+
+/* ── PARK CARD ── */
+.park-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;position:relative}
+.park-card.active-card{cursor:pointer}
+.park-card.active-card:hover{transform:translateY(-3px);box-shadow:0 12px 36px rgba(0,0,0,.1);border-color:rgba(0,0,0,.18)}
+.park-card.active-card:active{transform:translateY(-1px)}
+.park-card.placeholder{opacity:.52}
+
+/* Card-Header Farben */
+.park-card[data-park="paderborn"] .card-header{background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 60%,#2563eb 100%)}
+.park-card[data-park="hamm"]      .card-header{background:linear-gradient(135deg,#1a1a2e,#4a1942,#7c3aed)}
+.park-card[data-park="kassel"]    .card-header{background:linear-gradient(135deg,#052e16,#14532d,#16a34a)}
+.park-card[data-park="soest"]     .card-header{background:linear-gradient(135deg,#431407,#9a3412,#ea580c)}
+.park-card[data-park="brocken"]   .card-header{background:linear-gradient(135deg,#1e1b4b,#3730a3,#6366f1)}
+.park-card[data-park="steinau"]   .card-header{background:linear-gradient(135deg,#082f49,#0c4a6e,#0ea5e9)}
+
+.card-header{height:110px;position:relative;overflow:hidden;display:flex;align-items:flex-end;padding:14px 16px}
+.card-header::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 80% 20%,rgba(255,255,255,.08) 0%,transparent 60%),radial-gradient(circle at 20% 80%,rgba(255,255,255,.04) 0%,transparent 50%)}
+
+.card-header-icon{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.15);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;margin-right:10px;flex-shrink:0;position:relative;z-index:1}
+.card-header-icon svg{width:20px;height:20px;color:#fff}
+.card-header-text{flex:1;position:relative;z-index:1}
+.card-header-name{font-size:14px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.3);line-height:1.2}
+.card-header-loc{font-size:11px;color:rgba(255,255,255,.7);margin-top:2px}
+
+.soon-badge{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.18);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:3px 9px;font-size:10px;font-weight:600;color:rgba(255,255,255,.9);z-index:1}
+
+.card-body{padding:14px 16px 16px}
+.card-status-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.card-status{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600}
+.card-status.active{color:var(--grtx)}.card-status.inactive{color:var(--muted)}
+.status-dot{width:6px;height:6px;border-radius:50%}
+.status-dot.active{background:#16a34a}.status-dot.inactive{background:#d1d5db}
+
+.card-actions{display:flex;gap:7px}
+.btn-primary{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;background:var(--primary);color:var(--pfg);border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn-primary:hover{opacity:.85}
+.btn-primary svg{width:13px;height:13px}
+.btn-secondary{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 11px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s;white-space:nowrap}
+.btn-secondary:hover{background:var(--accent)}
+.btn-secondary svg{width:13px;height:13px}
+.card-meta{display:flex;gap:14px;margin-bottom:12px;font-size:11px;color:var(--muted)}
+.card-meta span{display:flex;align-items:center;gap:4px}
+.card-meta svg{width:12px;height:12px;flex-shrink:0}
+
+/* ── MONITORING OVERLAY ── */
+.mon-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);
+  display:none;align-items:stretch;justify-content:flex-end;z-index:100
+}
+.mon-overlay.open{display:flex}
+
+.mon-panel{
+  width:min(820px,100vw);
+  background:var(--bg);
+  display:flex;flex-direction:column;
+  height:100vh;
+  box-shadow:-8px 0 40px rgba(0,0,0,.2);
+  animation:slideIn .22s ease
+}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+
+.mon-header{
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  padding:0 22px;
+  height:58px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0
+}
+.mon-title{font-size:15px;font-weight:700}
+.mon-close{background:none;border:none;cursor:pointer;color:var(--muted);padding:6px;border-radius:7px;display:flex;align-items:center;transition:background .15s,color .15s}
+.mon-close:hover{background:var(--accent);color:var(--text)}
+.mon-close svg{width:18px;height:18px}
+
+/* Tabs im Monitoring-Panel */
+.mon-tabs{background:var(--card);border-bottom:1px solid var(--border);padding:0 22px;display:flex;gap:4px;flex-shrink:0}
+.mon-tab{padding:10px 14px;font-size:13px;font-weight:500;border:none;background:none;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:color .15s,border-color .15s;margin-bottom:-1px}
+.mon-tab.active{color:var(--text);border-bottom-color:var(--primary);font-weight:600}
+.mon-tab:hover:not(.active){color:var(--text)}
+
+.mon-body{flex:1;overflow-y:auto;padding:22px}
+
+/* Passwort-Gate */
+.pw-gate{display:flex;align-items:center;justify-content:center;height:100%;min-height:300px}
+.pw-box{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:28px;max-width:340px;width:100%;text-align:center}
+.pw-box h3{margin-bottom:8px;font-size:16px}
+.pw-box p{font-size:12px;color:var(--muted);margin-bottom:18px}
+.pw-input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--ibg);font-size:13px;outline:none;text-align:center;letter-spacing:.05em;margin-bottom:8px}
+.pw-input:focus{border-color:#999;box-shadow:0 0 0 2px rgba(3,2,19,.08)}
+.pw-err{font-size:12px;color:#dc2626;font-weight:500;margin-bottom:12px;display:none}
+.pw-btn{width:100%;padding:10px;background:var(--primary);color:var(--pfg);border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.pw-btn:hover{opacity:.85}
+.pw-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* Stats im Monitoring */
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:16px}
+.sbox{border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px}
+.sbox.tot{background:var(--bg)}.sbox.cas{background:var(--grbg);border-color:var(--grbr)}.sbox.ecc{background:var(--blbg);border-color:var(--blbr)}
+.slbl{font-size:10px;font-weight:700;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em}
+.sbox.cas .slbl{color:#15803d}.sbox.ecc .slbl{color:#1d4ed8}
+.sval{font-size:20px;font-weight:700}.sbox.cas .sval{color:var(--grtx)}.sbox.ecc .sval{color:var(--bltx)}
+.ssub{font-size:10px;color:var(--muted);margin-top:2px}.sbox.cas .ssub{color:var(--grsb)}.sbox.ecc .ssub{color:var(--blsb)}
+
+/* Order Cards */
+.olist{display:flex;flex-direction:column;gap:7px}
+.ocard{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:11px 12px;position:relative}
+.oin{display:flex;gap:14px;align-items:flex-start}
+.oleft{flex-shrink:0;width:190px}
+.oname{font-size:14px;font-weight:700;margin-bottom:3px}
+.ometa{display:flex;align-items:center;gap:7px;margin-bottom:2px}
+.otot{font-size:18px;font-weight:700}
+.badge{padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600}
+.badge.bar{background:var(--grbg);color:var(--grtx);border:1px solid var(--grbr)}
+.badge.ec{background:var(--blbg);color:var(--bltx);border:1px solid var(--blbr)}
+.badge.rechnung{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5}
+.otime{font-size:10px;color:var(--muted);line-height:1.4}
+.oright{flex:1;border-left:1px solid var(--border);padding-left:12px}
+.orow{display:flex;justify-content:space-between;font-size:11px;padding:1.5px 0}
+.orow-n{color:var(--muted)}.orow-p{font-weight:500}
+.odisc{display:flex;justify-content:space-between;font-size:11px;padding:3px 0 0;border-top:1px solid var(--border);color:#16a34a;font-weight:500}
+.ochange{font-size:10px;color:var(--muted);margin-top:2px}
+.oacts{display:flex;gap:7px;align-items:flex-start}
+.oempty{text-align:center;padding:32px;color:var(--muted);font-size:13px}
+
+/* Archiv Cards */
+.archiv-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.archiv-actions{display:flex;gap:8px}
+
+/* Archiv Detail Modal */
+.moverlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:200;padding:16px}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:22px;max-width:640px;width:100%;max-height:90vh;overflow-y:auto}
+.modal h3{margin-bottom:14px;font-size:15px;font-weight:600}
+.mlbl{font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:5px}
+.minput{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:7px;background:var(--ibg);font-size:13px;outline:none}
+.minput:focus{border-color:#999;box-shadow:0 0 0 2px rgba(3,2,19,.08)}
+.mbtns{display:flex;gap:9px;margin-top:18px}
+.mbtn{flex:1;padding:9px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--card);transition:background .15s}
+.mbtn:hover{background:var(--accent)}.mbtn.primary{background:var(--primary);color:var(--pfg);border-color:var(--primary)}.mbtn.primary:hover{opacity:.9}
+.mbtn:disabled{opacity:.4;cursor:not-allowed}
+.spy{display:flex;flex-direction:column;gap:12px}
+
+/* Passwort ändern Modal */
+.pw-modal-err{display:none;margin-top:5px;font-size:12px;color:#dc2626;font-weight:500}
+
+/* Schicht-Info-Banner */
+.schicht-banner{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px;margin-bottom:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:11px}
+.schicht-banner.has-kasse{grid-template-columns:repeat(7,1fr)}
+.sb-field{display:flex;flex-direction:column;gap:2px}
+.sb-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.sb-val{font-size:13px;font-weight:600;color:var(--text)}
+.sb-val.empty{color:var(--muted);font-weight:400;font-style:italic}
+.sb-sep{width:1px;background:var(--border);align-self:stretch;margin:2px 0}
+
+/* Edit-Button auf Anmeldungskarte */
+.icoBtn{background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;transition:color .15s}
+.icoBtn:hover{color:var(--dest)}.icoBtn.edit:hover{color:var(--primary)}
+.icoBtn svg{width:14px;height:14px;display:block}
+.oacts{display:flex;gap:7px;align-items:flex-start}
+
+/* Edit Modal Styles */
+.typ-btns{display:flex;gap:7px;margin-bottom:12px}
+.typ-btn{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);font-size:12px;font-weight:500;cursor:pointer;transition:background .15s,color .15s}
+.typ-btn:hover{background:var(--accent)}
+.edit-item{display:flex;align-items:center;gap:10px;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:7px}
+.edit-item-info{flex:1}
+.edit-item-name{font-size:13px;font-weight:600}
+.edit-item-age{font-size:11px;color:var(--muted)}
+.edit-disc-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--grbg);border:1px solid var(--grbr);border-radius:7px;font-size:12px;color:var(--grtx);margin-bottom:5px}
+.chkbox-list{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.chkrow{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer}
+.dremove{background:none;border:none;cursor:pointer;color:#15803d;transition:color .15s}.dremove:hover{color:var(--dest)}
+.dremove svg{width:12px;height:12px;display:block}
+.modal.wide{max-width:720px}
+
+.qbtn{width:26px;height:26px;border:1px solid var(--border);background:var(--card);border-radius:6px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:background .1s}
+.qbtn:hover{background:var(--accent)}
+.qrow{display:flex;align-items:center;gap:7px}
+.qin{width:44px;text-align:center;font-size:13px;font-weight:600;padding:2px 3px;border:1px solid var(--border);border-radius:5px;background:var(--ibg);outline:none;-moz-appearance:textfield}
+.qin::-webkit-outer-spin-button,.qin::-webkit-inner-spin-button{-webkit-appearance:none}
+
+/* ── PRINT AREA ── */
+#print-area{display:none}
+@media print{
+  body *{visibility:hidden}
+  #print-area,#print-area *{visibility:visible}
+  #print-area{
+    display:block!important;
+    position:absolute;inset:0;
+    background:#fff;color:#111;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    padding:20px 24px;
+    font-size:11px;
+  }
+  .pr-page{page-break-after:always}
+  .pr-page:last-child{page-break-after:avoid}
+  .pr-header{margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid #111}
+  .pr-title{font-size:16px;font-weight:700;margin-bottom:2px}
+  .pr-sub{font-size:10px;color:#666}
+  .pr-info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e5e7eb}
+  .pr-info-cell .lbl{font-size:9px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:2px}
+  .pr-info-cell .val{font-size:11px;font-weight:700;color:#111}
+  .pr-kasse-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e5e7eb}
+  .pr-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+  .pr-stat{border:1px solid #e5e7eb;border-radius:5px;padding:6px 9px;display:flex;flex-direction:column}
+  .pr-stat.tot{background:#f8f8f8}.pr-stat.cas{background:#f0fdf4;border-color:#bbf7d0}.pr-stat.ecc{background:#eff6ff;border-color:#bfdbfe}
+  .pr-stat .lbl{font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:2px}
+  .pr-stat.cas .lbl{color:#166534}.pr-stat.ecc .lbl{color:#1d4ed8}
+  .pr-stat .val-row{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+  .pr-stat .val{font-size:14px;font-weight:700;white-space:nowrap}.pr-stat.cas .val{color:#166534}.pr-stat.ecc .val{color:#1d4ed8}
+  .pr-stat .sub{font-size:9px;color:#888;white-space:nowrap;text-align:right}.pr-stat.cas .sub{color:#16a34a}.pr-stat.ecc .sub{color:#2563eb}
+  .pr-section-lbl{font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 5px;border-bottom:1px solid #e5e7eb;padding-bottom:3px}
+  .pr-olist{display:flex;flex-direction:column;gap:3px}
+  .pr-ocard{border:1px solid #e5e7eb;border-radius:4px;padding:5px 7px;page-break-inside:avoid}
+  .pr-oin{display:flex;gap:9px;align-items:flex-start}
+  .pr-oleft{flex-shrink:0;width:150px}
+  .pr-oname{font-size:10px;font-weight:700;margin-bottom:2px}
+  .pr-ometa{display:flex;align-items:center;gap:5px;margin-bottom:1px}
+  .pr-otot{font-size:12px;font-weight:700}
+  .pr-badge{padding:1px 4px;border-radius:99px;font-size:8px;font-weight:600}
+  .pr-badge.bar{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+  .pr-badge.ec{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+  .pr-otime{font-size:8px;color:#999;margin-top:2px;line-height:1.4}
+  .pr-oright{flex:1;border-left:1px solid #e5e7eb;padding-left:8px}
+  .pr-orow{display:flex;justify-content:space-between;font-size:9px;padding:1px 0}
+  .pr-orow-n{color:#666}.pr-orow-p{font-weight:500}
+  .pr-odisc{display:flex;justify-content:space-between;font-size:9px;padding:2px 0 0;border-top:1px solid #e5e7eb;color:#16a34a;font-weight:500}
+  .pr-ochange{font-size:8px;color:#999;margin-top:1px}
+}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#ccc;border-radius:99px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">
+    <div>
+      <div class="logo-name">Kletterwald Dashboard</div>
+      <div class="logo-sub">Park-Verwaltung</div>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+  <h1 class="page-title">Standorte</h1>
+  <p class="page-sub">Wähle einen Park, um die Anmeldungsübersicht zu öffnen.</p>
+
+  <div class="park-grid">
+
+    <!-- ── KLETTERWALD PADERBORN (aktiv) ── -->
+    <div class="park-card active-card" data-park="paderborn" onclick="openMonitoring('Kletterwald Paderborn','Paderborn, NRW')">
+      <div class="card-header">
+        <div class="card-header-text">
+          <div class="card-header-name">Kletterwald Paderborn</div>
+          <div class="card-header-loc">📍 Paderborn, NRW</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-status-row">
+          <div class="card-status active">
+            <span class="status-dot active"></span>
+            Aktiv
+          </div>
+        </div>
+        <!-- Mitteilungen auf der Karte -->
+        <div id="park-mitteilungen" style="display:none;margin-bottom:10px"></div>
+        <div class="card-actions">
+          <button class="btn-primary" onclick="event.stopPropagation();openMonitoring('Kletterwald Paderborn','Paderborn, NRW')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            Anmeldungsübersicht
+          </button>
+          <button class="btn-secondary" onclick="event.stopPropagation();openArchivDirect()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+            Archiv
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PLATZHALTER ── -->
+    <div class="park-card placeholder" data-park="hamm">
+      <div class="card-header">
+        <div class="card-header-text">
+          <div class="card-header-name">Dino-Kletterwald Hamm</div>
+          <div class="card-header-loc">📍 Hamm, NRW</div>
+        </div>
+        <div class="soon-badge">Dashboard folgt</div>
+      </div>
+      <div class="card-body">
+        <div class="card-status-row">
+          <div class="card-status inactive"><span class="status-dot inactive"></span>In Vorbereitung</div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-primary" disabled style="opacity:.35;cursor:not-allowed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>
+            Anmeldungsübersicht
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="park-card placeholder" data-park="kassel">
+      <div class="card-header">
+        <div class="card-header-text">
+          <div class="card-header-name">Kletterwald Kassel</div>
+          <div class="card-header-loc">📍 Kassel, Hessen</div>
+        </div>
+        <div class="soon-badge">Dashboard folgt</div>
+      </div>
+      <div class="card-body">
+        <div class="card-status-row">
+          <div class="card-status inactive"><span class="status-dot inactive"></span>In Vorbereitung</div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-primary" disabled style="opacity:.35;cursor:not-allowed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>
+            Anmeldungsübersicht
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="park-card placeholder" data-park="soest">
+      <div class="card-header">
+        <div class="card-header-text">
+          <div class="card-header-name">Kletterpark Soest</div>
+          <div class="card-header-loc">📍 Soest, NRW</div>
+        </div>
+        <div class="soon-badge">Dashboard folgt</div>
+      </div>
+      <div class="card-body">
+        <div class="card-status-row">
+          <div class="card-status inactive"><span class="status-dot inactive"></span>In Vorbereitung</div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-primary" disabled style="opacity:.35;cursor:not-allowed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>
+            Anmeldungsübersicht
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="park-card placeholder" data-park="brocken">
+      <div class="card-header">
+        <div class="card-header-text">
+          <div class="card-header-name">Kletterwald am Brocken</div>
+          <div class="card-header-loc">📍 Brocken, Harz</div>
+        </div>
+        <div class="soon-badge">Dashboard folgt</div>
+      </div>
+      <div class="card-body">
+        <div class="card-status-row">
+          <div class="card-status inactive"><span class="status-dot inactive"></span>In Vorbereitung</div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-primary" disabled style="opacity:.35;cursor:not-allowed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>
+            Anmeldungsübersicht
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="park-card placeholder" data-park="steinau">
+      <div class="card-header">
+        <div class="card-header-text">
+          <div class="card-header-name">Europa Kletterwald</div>
+          <div class="card-header-loc">📍 Steinau, Hessen</div>
+        </div>
+        <div class="soon-badge">Dashboard folgt</div>
+      </div>
+      <div class="card-body">
+        <div class="card-status-row">
+          <div class="card-status inactive"><span class="status-dot inactive"></span>In Vorbereitung</div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-primary" disabled style="opacity:.35;cursor:not-allowed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>
+            Anmeldungsübersicht
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /park-grid -->
+</main>
+
+<!-- ── MONITORING OVERLAY PANEL ── -->
+<div class="mon-overlay" id="mon-overlay" onclick="if(event.target===this)closeMonitoring()">
+  <div class="mon-panel" id="mon-panel">
+    <div class="mon-header">
+      <div>
+        <div class="mon-title" id="mon-park-name">Kletterwald Paderborn</div>
+        <div style="font-size:11px;color:var(--muted)" id="mon-park-loc">Paderborn, NRW</div>
+      </div>
+      <button class="mon-close" onclick="closeMonitoring()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="mon-tabs" style="display:flex;align-items:center">
+      <button class="mon-tab active" id="tab-anmeldungen" onclick="switchTab('anmeldungen')">Anmeldungen</button>
+      <button class="mon-tab" id="tab-archiv" onclick="switchTab('archiv')">Archiv</button>
+      <button class="mon-tab" id="tab-leaderboard" onclick="switchTab('leaderboard')">Mitarbeiterzufriedenheit</button>
+      <button onclick="openChangeKassenPw()" style="margin-left:auto;display:flex;align-items:center;gap:5px;padding:5px 11px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;transition:background .15s;white-space:nowrap" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background='var(--card)'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Kassen-Passwort
+      </button>
+    </div>
+    <div class="mon-body" id="mon-body">
+      <!-- befüllt per JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ── MITTEILUNGEN FORUM MODAL ── -->
+<div class="moverlay" id="m-mit-all" style="display:none" onclick="if(event.target===this)document.getElementById('m-mit-all').style.display='none'">
+  <div class="modal" style="max-width:720px;max-height:88vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3>Mitteilungen</h3>
+      <button class="icoBtn" onclick="document.getElementById('m-mit-all').style.display='none'" style="color:var(--muted)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px">
+      <textarea id="mit-admin-new-text" rows="2" placeholder="Neue Mitteilung als Admin schreiben…" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:var(--card);font-size:13px;resize:vertical;outline:none;font-family:inherit;margin-bottom:8px"></textarea>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="mbtn primary" style="flex:none;padding:8px 16px" onclick="sendAdminMitteilung()">Senden</button>
+      </div>
+    </div>
+    <div id="mit-all-list"></div>
+  </div>
+</div>
+
+<!-- ── ARCHIV DETAIL MODAL ── -->
+<div class="moverlay" id="m-archiv-detail" onclick="if(event.target===this)document.getElementById('m-archiv-detail').style.display='none'">
+  <div class="modal" style="max-width:680px;max-height:88vh;overflow-y:auto">
+    <h3 id="ad-title">Schicht-Details</h3>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;font-size:12px" id="ad-schicht"></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;font-size:12px" id="ad-kasse"></div>
+    <div id="ad-notizen" style="margin-bottom:14px"></div>
+    <div class="stats" id="ad-stats"></div>
+    <div class="olist" id="ad-orders"></div>
+    <div class="mbtns"><button class="mbtn" onclick="document.getElementById('m-archiv-detail').style.display='none'">Schließen</button></div>
+  </div>
+</div>
+
+<!-- ── ARCHIV ANMELDUNG LÖSCHEN MODAL ── -->
+<div class="moverlay" id="m-del-archiv-order" onclick="if(event.target===this)cancelDelArchivOrder()" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <h3 style="margin-bottom:8px">Anmeldung löschen?</h3>
+    <p id="del-archiv-order-msg" style="font-size:12px;color:var(--muted);margin-bottom:16px"></p>
+    <div class="mbtns">
+      <button class="mbtn" onclick="cancelDelArchivOrder()">Abbrechen</button>
+      <button class="mbtn" id="del-archiv-order-btn" onclick="confirmDelArchivOrder()" style="background:#dc2626;color:#fff;border-color:#dc2626">Löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ARCHIV LÖSCHEN MODAL ── -->
+<div class="moverlay" id="m-archiv-loeschen" onclick="if(event.target===this)document.getElementById('m-archiv-loeschen').style.display='none'">
+  <div class="modal" style="max-width:400px">
+    <h3>Archiv löschen?</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Alle archivierten Schichten werden unwiderruflich gelöscht. Die aktuelle Session bleibt unberührt.</p>
+    <div class="mbtns">
+      <button class="mbtn" onclick="document.getElementById('m-archiv-loeschen').style.display='none'">Abbrechen</button>
+      <button class="mbtn" id="al-del-btn" onclick="confirmArchivLoeschen()" style="background:#dc2626;color:#fff;border-color:#dc2626">Alles löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── PASSWORT ÄNDERN MODAL ── -->
+<div class="moverlay" id="m-change-pw" onclick="if(event.target===this)document.getElementById('m-change-pw').style.display='none'">
+  <div class="modal" style="max-width:380px">
+    <h3>Passwort ändern</h3>
+    <div class="spy">
+      <div>
+        <label class="mlbl">Aktuelles Passwort</label>
+        <input class="minput" type="password" id="cp-old" placeholder="Aktuelles Passwort…" oninput="checkCpOld()">
+        <div id="cp-old-err" class="pw-modal-err">Falsches Passwort.</div>
+      </div>
+      <div id="cp-new-section" style="display:none">
+        <label class="mlbl">Neues Passwort</label>
+        <input class="minput" type="password" id="cp-new" placeholder="Neues Passwort…" oninput="checkCpNew()">
+        <label class="mlbl" style="margin-top:10px">Bestätigen</label>
+        <input class="minput" type="password" id="cp-new2" placeholder="Wiederholen…" oninput="checkCpNew()">
+        <div id="cp-new-err" class="pw-modal-err">Passwörter stimmen nicht überein.</div>
+      </div>
+    </div>
+    <div class="mbtns" style="margin-top:16px">
+      <button class="mbtn" onclick="document.getElementById('m-change-pw').style.display='none'">Abbrechen</button>
+      <button class="mbtn primary" id="cp-save-btn" disabled onclick="saveNewPw()" style="opacity:.4;cursor:not-allowed">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── KASSEN-PASSWORT ÄNDERN MODAL ── -->
+<div class="moverlay" id="m-change-kassenpw" onclick="if(event.target===this)document.getElementById('m-change-kassenpw').style.display='none'">
+  <div class="modal" style="max-width:380px">
+    <h3>Kassen-Passwort ändern</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Zugangspasswort für die Paderborner Kassenseite.</p>
+    <div class="spy">
+      <div>
+        <label class="mlbl">Aktuelles Kassen-Passwort</label>
+        <input class="minput" type="password" id="ckp-old" placeholder="Aktuelles Passwort…" oninput="checkCkpOld()">
+        <div id="ckp-old-err" class="pw-modal-err">Falsches Passwort.</div>
+      </div>
+      <div id="ckp-new-section" style="display:none">
+        <label class="mlbl">Neues Kassen-Passwort</label>
+        <input class="minput" type="password" id="ckp-new" placeholder="Neues Passwort…" oninput="checkCkpNew()">
+        <label class="mlbl" style="margin-top:10px">Bestätigen</label>
+        <input class="minput" type="password" id="ckp-new2" placeholder="Wiederholen…" oninput="checkCkpNew()">
+        <div id="ckp-new-err" class="pw-modal-err">Passwörter stimmen nicht überein.</div>
+      </div>
+    </div>
+    <div class="mbtns" style="margin-top:16px">
+      <button class="mbtn" onclick="document.getElementById('m-change-kassenpw').style.display='none'">Abbrechen</button>
+      <button class="mbtn primary" id="ckp-save-btn" disabled onclick="saveNewKassenPw()" style="opacity:.4;cursor:not-allowed">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ANMELDUNG LÖSCHEN MODAL ── -->
+<div class="moverlay" id="m-del-order" onclick="if(event.target===this)cancelDelOrder()" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <h3 style="margin-bottom:8px">Anmeldung löschen?</h3>
+    <p id="del-order-msg" style="font-size:12px;color:var(--muted);margin-bottom:16px"></p>
+    <div class="mbtns">
+      <button class="mbtn" onclick="cancelDelOrder()">Abbrechen</button>
+      <button class="mbtn" id="del-order-btn" onclick="confirmDelOrder()" style="background:#dc2626;color:#fff;border-color:#dc2626">Löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── NEUE ANMELDUNG MODAL ── -->
+<div class="moverlay" id="m-new-order" onclick="if(event.target===this)cancelNewOrder()" style="display:none">
+  <div class="modal wide" style="max-width:680px;max-height:88vh;overflow-y:auto">
+    <h3 style="margin-bottom:16px">Neue Anmeldung</h3>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label class="mlbl">Name</label>
+        <input class="minput" type="text" id="no-name" placeholder="Name eingeben…" oninput="updNoSaveBtn()">
+      </div>
+      <div>
+        <label class="mlbl">Zahlungsart</label>
+        <div style="display:flex;gap:8px">
+          <button class="typ-btn" id="no-bar" onclick="setNoPay('bar')">Bar</button>
+          <button class="typ-btn" id="no-ec" onclick="setNoPay('ec')">EC</button>
+        </div>
+      </div>
+      <div>
+        <label class="mlbl">Preiskategorie hinzufügen</label>
+        <select class="minput" id="no-addcat" onchange="noAddCat()"><option value="">Preiskategorie wählen…</option></select>
+      </div>
+      <div>
+        <label class="mlbl">Artikel</label>
+        <div id="no-items"></div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+          <label class="mlbl" style="margin-bottom:0">Rabatte</label>
+          <button style="display:flex;align-items:center;gap:4px;padding:5px 9px;font-size:11px;border:1px solid var(--border);border-radius:7px;background:var(--card);cursor:pointer" onclick="toggleNoVoucher()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Gutschein hinzufügen
+          </button>
+        </div>
+        <div id="no-voucher-section" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px;margin-bottom:9px">
+          <div class="typ-btns">
+            <button class="typ-btn active" id="novt-fixed" onclick="setNoVType('fixed')">Fester Betrag</button>
+            <button class="typ-btn" id="novt-pct" onclick="setNoVType('percent')">Prozent-Rabatt</button>
+          </div>
+          <div id="nov-fixed">
+            <label class="mlbl">Gutscheinwert (€)</label>
+            <input class="minput" type="number" step="0.01" min="0" id="nov-amt" placeholder="0.00">
+          </div>
+          <div id="nov-pct" style="display:none">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div><label class="mlbl">Rabatt in %</label><input class="minput" type="number" step="1" min="0" max="100" id="nov-pctval" placeholder="0"></div>
+              <div><label class="mlbl">Auf welche Artikel?</label><div class="chkbox-list" id="nov-items"></div></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:7px;margin-top:10px">
+            <button class="mbtn" onclick="cancelNoVoucher()" style="flex:1;padding:7px;font-size:12px">Abbrechen</button>
+            <button class="mbtn primary" onclick="applyNoVoucher()" style="flex:1;padding:7px;font-size:12px">Hinzufügen</button>
+          </div>
+        </div>
+        <div id="no-discounts"></div>
+      </div>
+    </div>
+    <div id="no-total-row" style="display:none;margin-top:12px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;text-align:right"></div>
+    <div class="mbtns">
+      <button class="mbtn" onclick="cancelNewOrder()">Abbrechen</button>
+      <button class="mbtn primary" id="no-save-btn" onclick="saveNewOrder()" disabled style="opacity:.4;cursor:not-allowed">Anmeldung speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── EDIT ANMELDUNG MODAL ── -->
+<div class="moverlay" id="m-edit" onclick="if(event.target===this)cancelEdit()" style="display:none">
+  <div class="modal wide" style="max-width:680px;max-height:88vh;overflow-y:auto">
+    <h3 style="margin-bottom:16px">Anmeldung bearbeiten</h3>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label class="mlbl">Name</label>
+        <input class="minput" type="text" id="ed-name">
+      </div>
+      <div>
+        <label class="mlbl">Zahlungsart</label>
+        <div style="display:flex;gap:8px">
+          <button class="typ-btn" id="ed-bar" onclick="setEdPay('bar')">Bar</button>
+          <button class="typ-btn" id="ed-ec" onclick="setEdPay('ec')">EC</button>
+        </div>
+      </div>
+      <div>
+        <label class="mlbl">Preiskategorie hinzufügen</label>
+        <select class="minput" id="ed-addcat" onchange="edAddCat()"><option value="">Preiskategorie wählen…</option></select>
+      </div>
+      <div>
+        <label class="mlbl">Artikel</label>
+        <div id="ed-items"></div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+          <label class="mlbl" style="margin-bottom:0">Rabatte</label>
+          <button style="display:flex;align-items:center;gap:4px;padding:5px 9px;font-size:11px;border:1px solid var(--border);border-radius:7px;background:var(--card);cursor:pointer" onclick="toggleEdVoucher()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Gutschein hinzufügen
+          </button>
+        </div>
+        <div id="ed-voucher-section" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px;margin-bottom:9px">
+          <div class="typ-btns">
+            <button class="typ-btn active" id="edvt-fixed" onclick="setEdVType('fixed')">Fester Betrag</button>
+            <button class="typ-btn" id="edvt-pct" onclick="setEdVType('percent')">Prozent-Rabatt</button>
+          </div>
+          <div id="edv-fixed">
+            <label class="mlbl">Gutscheinwert (€)</label>
+            <input class="minput" type="number" step="0.01" min="0" id="edv-amt" placeholder="0.00">
+          </div>
+          <div id="edv-pct" style="display:none">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div><label class="mlbl">Rabatt in %</label><input class="minput" type="number" step="1" min="0" max="100" id="edv-pctval" placeholder="0"></div>
+              <div><label class="mlbl">Auf welche Artikel?</label><div class="chkbox-list" id="edv-items"></div></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:7px;margin-top:10px">
+            <button class="mbtn" onclick="cancelEdVoucher()" style="flex:1;padding:7px;font-size:12px">Abbrechen</button>
+            <button class="mbtn primary" onclick="applyEdVoucher()" style="flex:1;padding:7px;font-size:12px">Hinzufügen</button>
+          </div>
+        </div>
+        <div id="ed-discounts"></div>
+      </div>
+    </div>
+    <div class="mbtns">
+      <button class="mbtn" onclick="cancelEdit()">Abbrechen</button>
+      <button class="mbtn primary" onclick="saveEdit()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── FIREBASE ── -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getFirestore, collection, getDocs, deleteDoc, doc, setDoc, addDoc, onSnapshot }
+  from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+
+const firebaseConfig = {
+  apiKey: "AIzaSyANABs6v38UkBo_CXR_qt_KsY_1yCVr5VQ",
+  authDomain: "anmeldungensyncer.firebaseapp.com",
+  projectId: "anmeldungensyncer",
+  storageBucket: "anmeldungensyncer.firebasestorage.app",
+  messagingSenderId: "444676738503",
+  appId: "1:444676738503:web:2e0ba915c55c5305b71de2",
+  measurementId: "G-NZ80P58Y12"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+window.db            = db;
+window.fbCollection  = collection;
+window.fbGetDocs     = getDocs;
+window.fbDeleteDoc   = deleteDoc;
+window.fbDoc         = doc;
+window.fbSetDoc      = setDoc;
+window.fbAddDoc      = addDoc;
+window.fbOnSnapshot  = onSnapshot;
+window.dispatchEvent(new Event('firebase-ready'));
+</script>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────
+let orders  = [];
+let shifts  = [];
+let mitteilungen = [];
+let mitarbeiter = [];
+let archivPw = 'KassenMaster!';
+let kassenPw = 'Dom';
+let archivUnlocked = false;
+let currentTab = 'anmeldungen';
+let syncUnsubs = [];
+let sessionData = {};
+
+// ── PRICE CATEGORIES (same as Kasse) ─────────────────────────────────
+const CATS={
+  normal:[
+    {id:'adults',     name:'Erwachsene',          age:'18+',                      price:28},
+    {id:'youth',      name:'Jugendliche',          age:'12–17 Jahre',              price:26},
+    {id:'children',   name:'Kinder',               age:'6–11 Jahre',               price:24},
+    {id:'young',      name:'Kinder',               age:'4–5 Jahre',                price:19},
+    {id:'dwarf',      name:'Zwergenticket',         age:'1 Erw. + 1 Kind 4–5 J.',  price:38},
+  ],
+  erm:[
+    {id:'adults-r',   name:'Erwachsene Ermäßigt',  age:'18+',                      price:26},
+    {id:'youth-r',    name:'Jugendliche Ermäßigt', age:'12–17 Jahre',              price:24},
+    {id:'children-r', name:'Kinder Ermäßigt',      age:'6–11 Jahre',               price:22},
+    {id:'young-r',    name:'Kinder Ermäßigt',      age:'4–5 Jahre',                price:17},
+  ],
+  sch:[
+    {id:'sch46',  name:'Schulklasse', age:'Schüler 4.–6. Klasse',  price:19},
+    {id:'sch713', name:'Schulklasse', age:'Schüler 7.–13. Klasse', price:20},
+  ],
+};
+const YEAR_CARDS=[
+  {id:'yc45',    name:'Jahreskarte', age:'4–5 Jahre',                        price:110},
+  {id:'yc611',   name:'Jahreskarte', age:'6–11 Jahre',                       price:130},
+  {id:'yc1217',  name:'Jahreskarte', age:'12–17 J. / Schüler / Studenten',   price:140},
+  {id:'ycadult', name:'Jahreskarte', age:'Erwachsene',                       price:150},
+];
+const ALL_CATS=[...CATS.normal,...CATS.erm,...CATS.sch,...YEAR_CARDS];
+
+// Edit state
+let editId = null, editItems = [], editDiscs = [], editPay = 'bar';
+let edVType = 'fixed';
+
+// ── FIREBASE START ────────────────────────────────────────────────────
+window.addEventListener('firebase-ready', () => {
+  // Passwort aus Firestore laden
+  window.fbOnSnapshot(
+    window.fbDoc(window.db, 'config', 'archiv'),
+    snap => { if(snap.exists() && snap.data().pw) archivPw = snap.data().pw; }
+  );
+  window.fbOnSnapshot(
+    window.fbDoc(window.db, 'config', 'kassenpw'),
+    snap => { if(snap.exists() && snap.data().pw) kassenPw = snap.data().pw; }
+  );
+  // Session (Schichtinfos) live laden
+  window.fbOnSnapshot(
+    window.fbDoc(window.db, 'session', 'current'),
+    snap => {
+      sessionData = snap.exists() ? snap.data() : {};
+      if(currentTab === 'anmeldungen' && document.getElementById('mon-overlay').classList.contains('open')) {
+        renderAnmeldungenTab();
+      }
+    }
+  );
+  // Anmeldungen live
+  window.fbOnSnapshot(
+    window.fbCollection(window.db, 'orders'),
+    snap => {
+      orders = [];
+      snap.forEach(d => orders.push({ firestoreId: d.id, ...d.data(), ts: d.data().ts ? (d.data().ts.toDate ? d.data().ts.toDate() : new Date(d.data().ts)) : new Date() }));
+      orders.sort((a,b) => new Date(b.ts) - new Date(a.ts));
+      if(currentTab === 'anmeldungen' && document.getElementById('mon-overlay').classList.contains('open')) {
+        renderAnmeldungenTab();
+      }
+    }
+  );
+  // Schichten live
+  window.fbOnSnapshot(
+    window.fbCollection(window.db, 'shifts'),
+    snap => {
+      shifts = [];
+      snap.forEach(d => shifts.push({ firestoreId: d.id, ...d.data() }));
+      shifts.sort((a,b) => new Date(b.archivedAt||0) - new Date(a.archivedAt||0));
+      if(currentTab === 'archiv' && archivUnlocked && document.getElementById('mon-overlay').classList.contains('open')) {
+        renderArchivTab();
+      }
+    }
+  );
+  // Mitteilungen live
+  window.fbOnSnapshot(
+    window.fbCollection(window.db, 'mitteilungen'),
+    snap => {
+      mitteilungen = [];
+      snap.forEach(d => mitteilungen.push({ firestoreId: d.id, ...d.data() }));
+      renderParkMitteilungen();
+      if(document.getElementById('m-mit-all').style.display==='flex') renderMitAllModal();
+    }
+  );
+  // Mitarbeiter-Bewertungen live (Leaderboard)
+  window.fbOnSnapshot(
+    window.fbCollection(window.db, 'mitarbeiter'),
+    snap => {
+      mitarbeiter = [];
+      snap.forEach(d => mitarbeiter.push({ firestoreId: d.id, ...d.data() }));
+      if(currentTab === 'leaderboard' && document.getElementById('mon-overlay').classList.contains('open')) {
+        renderLeaderboardTab();
+      }
+    }
+  );
+  // Edit dropdown aufbauen
+  buildEdAddCat();
+});
+
+// ── MITTEILUNGEN (Forum) ────────────────────────────────────────────
+// Alle Root-Mitteilungen: offene zuerst (neueste zuerst), abgeschlossene danach (neueste zuerst)
+function mitRoots(){
+  const all=mitteilungen.filter(m=>!m.parentId);
+  const open=all.filter(m=>!m.done).sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+  const done=all.filter(m=>m.done).sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+  return [...open,...done];
+}
+// Nur die offenen (noch nicht abgeschlossenen) Root-Mitteilungen – für die Karten-Vorschau
+function mitOpenRoots(){return mitteilungen.filter(m=>!m.parentId&&!m.done).sort((a,b)=>new Date(b.ts)-new Date(a.ts));}
+function mitReplies(rootId){return mitteilungen.filter(m=>m.parentId===rootId).sort((a,b)=>new Date(a.ts)-new Date(b.ts));}
+
+// ── PARK-KARTE MITTEILUNGEN ───────────────────────────────────────────
+function renderParkMitteilungen() {
+  const container = document.getElementById('park-mitteilungen');
+  if(!container) return;
+  const roots = mitOpenRoots();
+  // Offene (nicht abgehakte) Rechnungen
+  const offeneRechnungen = shifts.filter(s => s.rechnungPending && !s.rechnungDone);
+  container.style.display = 'block';
+
+  let html = '';
+
+  // Rechnung-Warnung
+  if(offeneRechnungen.length > 0) {
+    html += `<div style="border:1px solid #fca5a5;border-radius:10px;background:#fff5f5;overflow:hidden;margin-bottom:8px">
+      <div style="padding:8px 12px;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">📄 Rechnung ausstehend</span>
+        <span style="font-size:11px;font-weight:600">${offeneRechnungen.length} Schicht${offeneRechnungen.length!==1?'en':''}</span>
+      </div>
+      <div style="padding:8px 12px;font-size:12px;color:#991b1b;line-height:1.5">
+        ${offeneRechnungen.map(s=>{
+          const d=s.sDate?new Date(s.sDate+'T00:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'–';
+          return `<div style="padding:4px 0;border-bottom:1px solid #fecaca"><span style="font-weight:600">${esc(d)}</span> · ${esc(s.sName||'Unbekannt')}</div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  if(roots.length === 0 && offeneRechnungen.length === 0) {
+    container.innerHTML = `
+      <button onclick="event.stopPropagation();openMitAll()"
+        style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;background:var(--accent);color:var(--text);border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Mitteilungen
+      </button>`;
+    return;
+  }
+
+  if(roots.length > 0) {
+    const latest = roots[0];
+    html += `
+      <div onclick="event.stopPropagation();openMitAll()" style="cursor:pointer;border:1px solid #fca5a5;border-radius:10px;background:#fff5f5;overflow:hidden">
+        <div style="padding:8px 12px;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">⚠ Aktuelle Mitteilungen</span>
+          <span style="background:none;border:none;color:#fff;font-size:11px;font-weight:600">Alle anzeigen ▾</span>
+        </div>
+        <div style="padding:8px 12px;font-size:12px;color:#991b1b">
+          <span style="font-size:10px;color:#dc2626;font-weight:600">${esc(fmtTs(latest.ts))} · ${esc(latest.author||'Unbekannt')}</span><br>
+          ${esc(latest.text)}
+        </div>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function openMitAll(){
+  renderMitAllModal();
+  document.getElementById('m-mit-all').style.display='flex';
+}
+function renderMitAllModal(){
+  const list=document.getElementById('mit-all-list');
+  if(!list)return;
+  const roots=mitRoots();
+  if(roots.length===0){
+    list.innerHTML='<div class="oempty">Es gibt keine Mitteilungen</div>';
+    return;
+  }
+  list.innerHTML=roots.map(r=>{
+    const replies=mitReplies(r.firestoreId);
+    const done=!!r.done;
+    const doneBtn=done
+      ? `<button class="icoBtn edit" title="Wieder öffnen" onclick="undoMitDone('${r.firestoreId}')">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+         </button>`
+      : `<button class="icoBtn edit" title="Als erledigt markieren" onclick="markMitDone('${r.firestoreId}')">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><polyline points="20 6 9 17 4 12"/></svg>
+         </button>`;
+    return `<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden${done?';opacity:.55':''}">
+      ${done?`<div style="padding:5px 14px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">✓ Abgeschlossen</div>`:''}
+      <div style="padding:12px 14px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;gap:8px">
+          <span style="font-size:12px;font-weight:700">${esc(r.author||'Unbekannt')}</span>
+          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+            <span style="font-size:10px;color:var(--muted);white-space:nowrap">${fmtTs(r.ts)}</span>
+            ${doneBtn}
+            <button class="icoBtn" title="Löschen" onclick="deleteMitThread('${r.firestoreId}')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </button>
+          </div>
+        </div>
+        <div style="font-size:13px;white-space:pre-wrap">${esc(r.text)}</div>
+      </div>
+      ${replies.length?`<div style="border-top:1px solid var(--border);background:var(--bg)">${replies.map(rp=>`
+        <div style="padding:9px 14px 9px 26px;border-bottom:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;gap:8px">
+            <span style="font-size:11px;font-weight:700">${esc(rp.author||'Unbekannt')}</span>
+            <span style="font-size:10px;color:var(--muted);white-space:nowrap">${fmtTs(rp.ts)}</span>
+          </div>
+          <div style="font-size:12px;white-space:pre-wrap">${esc(rp.text)}</div>
+        </div>`).join('')}</div>`:''}
+      <div style="padding:8px 14px;border-top:1px solid var(--border);display:flex;gap:8px">
+        <input type="text" id="mit-reply-${r.firestoreId}" placeholder="Als Admin antworten…" style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--ibg);font-size:12px;outline:none;font-family:inherit" onkeydown="if(event.key==='Enter'){event.preventDefault();sendMitReply('${r.firestoreId}')}">
+        <button onclick="sendMitReply('${r.firestoreId}')" style="padding:7px 12px;background:var(--accent);border:none;border-radius:var(--radius);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">Antworten</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function sendAdminMitteilung(){
+  const ta=document.getElementById('mit-admin-new-text');
+  const text=ta.value.trim();
+  if(!text)return;
+  await window.fbAddDoc(window.fbCollection(window.db,'mitteilungen'),{
+    text,author:'Admin',ts:new Date().toISOString(),parentId:null,done:false
+  });
+  ta.value='';
+}
+async function sendMitReply(rootId){
+  const inp=document.getElementById('mit-reply-'+rootId);
+  const text=inp.value.trim();
+  if(!text)return;
+  await window.fbAddDoc(window.fbCollection(window.db,'mitteilungen'),{
+    text,author:'Admin',ts:new Date().toISOString(),parentId:rootId,done:false
+  });
+  inp.value='';
+}
+async function markMitDone(id){
+  await window.fbSetDoc(window.fbDoc(window.db,'mitteilungen',id),{done:true},{merge:true});
+}
+async function undoMitDone(id){
+  await window.fbSetDoc(window.fbDoc(window.db,'mitteilungen',id),{done:false},{merge:true});
+}
+async function deleteMitThread(id){
+  const toDelete=[id,...mitteilungen.filter(m=>m.parentId===id).map(m=>m.firestoreId)];
+  await Promise.all(toDelete.map(did=>window.fbDeleteDoc(window.fbDoc(window.db,'mitteilungen',did))));
+}
+// Mitteilungen Ende
+
+// ── MONITORING PANEL ──────────────────────────────────────────────────
+function openMonitoring(name, loc) {
+  document.getElementById('mon-park-name').textContent = name;
+  document.getElementById('mon-park-loc').textContent  = loc;
+  archivUnlocked = false;
+  currentTab = 'anmeldungen';
+  document.getElementById('tab-anmeldungen').classList.add('active');
+  document.getElementById('tab-archiv').classList.remove('active');
+  document.getElementById('tab-leaderboard').classList.remove('active');
+  document.getElementById('mon-overlay').classList.add('open');
+  renderAnmeldungenTab();
+}
+
+function openArchivDirect() {
+  document.getElementById('mon-park-name').textContent = 'Kletterwald Paderborn';
+  document.getElementById('mon-park-loc').textContent  = 'Paderborn, NRW';
+  currentTab = 'archiv';
+  document.getElementById('tab-anmeldungen').classList.remove('active');
+  document.getElementById('tab-archiv').classList.add('active');
+  document.getElementById('tab-leaderboard').classList.remove('active');
+  document.getElementById('mon-overlay').classList.add('open');
+  renderArchivTab();
+}
+
+function closeMonitoring() {
+  document.getElementById('mon-overlay').classList.remove('open');
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tab-anmeldungen').classList.toggle('active', tab === 'anmeldungen');
+  document.getElementById('tab-archiv').classList.toggle('active', tab === 'archiv');
+  document.getElementById('tab-leaderboard').classList.toggle('active', tab === 'leaderboard');
+  if(tab === 'anmeldungen') renderAnmeldungenTab();
+  else if(tab === 'archiv') renderArchivTab();
+  else renderLeaderboardTab();
+}
+
+// ── ANMELDUNGEN TAB ───────────────────────────────────────────────────
+function renderAnmeldungenTab() {
+  const body = document.getElementById('mon-body');
+  const bar = orders.filter(o => o.method === 'bar');
+  const ec  = orders.filter(o => o.method === 'ec');
+  const tot = orders.reduce((s,o) => s + o.total, 0);
+
+  // Schicht-Banner aus session/current (nur Mitarbeiterinfos, keine Kassendaten)
+  const sv = v => v ? `<span class="sb-val">${esc(String(v))}</span>` : `<span class="sb-val empty">–</span>`;
+  const sd = sessionData;
+  const dateDisp = sd.sDate ? new Date(sd.sDate+'T00:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : null;
+
+  const bannerHtml = `
+    <div class="schicht-banner">
+      <div class="sb-field"><span class="sb-lbl">Mitarbeiter</span>${sv(sd.sName)}</div>
+      <div class="sb-field"><span class="sb-lbl">Datum</span>${sv(dateDisp)}</div>
+      <div class="sb-field"><span class="sb-lbl">Von</span>${sv(sd.sFrom)}</div>
+      <div class="sb-field"><span class="sb-lbl">Bis</span>${sv(sd.sTo)}</div>
+    </div>`;
+
+  const statsHtml = `
+    <div class="stats">
+      <div class="sbox tot"><div class="slbl">Gesamtumsatz</div><div class="sval">${fmt(tot)}</div></div>
+      <div class="sbox cas"><div class="slbl">Baranteil</div><div class="sval">${fmt(bar.reduce((s,o)=>s+o.total,0))}</div><div class="ssub">${bar.length} Anmeldung${bar.length!==1?'en':''}</div></div>
+      <div class="sbox ecc"><div class="slbl">EC-Anteil</div><div class="sval">${fmt(ec.reduce((s,o)=>s+o.total,0))}</div><div class="ssub">${ec.length} Anmeldung${ec.length!==1?'en':''}</div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <button onclick="printAnmeldungen()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background='var(--card)'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        PDF / Drucken
+      </button>
+      <button onclick="openNewOrder()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Neue Anmeldung
+      </button>
+    </div>`;
+
+  const ordersHtml = orders.length === 0
+    ? '<div class="oempty">Noch keine Anmeldungen vorhanden</div>'
+    : orders.map(o => {
+        const discs = (o.discounts||[]).map(d=>`<div class="odisc"><span>${esc(d.label||d.type)}</span><span>-${fmt(d.amount)}</span></div>`).join('');
+        const change = (o.given!=null&&o.change!=null) ? `<div class="ochange">Gegeben: ${fmt(o.given)} | Rückgeld: ${fmt(o.change)}</div>` : '';
+        const editedHtml = o.editedTs ? ` <span style="font-style:italic">(bearbeitet ${fmtTs(o.editedTs)})</span>` : '';
+        const oid = o.id||o.firestoreId;
+        return `<div class="ocard" id="oc-${oid}">
+          <div class="oin">
+            <div class="oleft">
+              <div class="oname">${esc(o.name)}</div>
+              <div class="ometa"><span class="otot">${fmt(o.total)}</span><span class="badge ${o.method}">${o.method==='bar'?'Bar':'EC'}</span></div>
+              ${change}
+              <div class="otime">${fmtTs(o.ts)}${editedHtml}</div>
+            </div>
+            <div class="oright">
+              ${(o.items||[]).map(it=>`<div class="orow"><span class="orow-n">${esc(it.name)}${it.age?' ('+esc(it.age)+')':''}</span><span class="orow-p">${it.qty} × ${it.price} € = ${fmt(it.qty*it.price)}</span></div>`).join('')}
+              ${discs}
+            </div>
+            <div class="oacts">
+              <button class="icoBtn edit" title="Bearbeiten" onclick="startEdit('${oid}')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button class="icoBtn" title="Löschen" onclick="askDelOrder('${oid}')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+
+  body.innerHTML = bannerHtml + statsHtml + '<div class="olist">' + ordersHtml + '</div>';
+}
+
+// ── ARCHIV TAB ────────────────────────────────────────────────────────
+function renderArchivTab() {
+  const body = document.getElementById('mon-body');
+
+  if(!archivUnlocked) {
+    body.innerHTML = `
+      <div class="pw-gate">
+        <div class="pw-box">
+          <div style="width:44px;height:44px;background:var(--ibg);border:1px solid var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:22px;height:22px;color:var(--muted)"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h3>Archiv</h3>
+          <p>Bitte Passwort eingeben, um das Archiv zu öffnen.</p>
+          <input class="pw-input" type="password" id="pw-gate-input" placeholder="Passwort…"
+            oninput="checkGatePw()" onkeydown="if(event.key==='Enter')confirmGatePw()">
+          <div class="pw-err" id="pw-gate-err">Falsches Passwort.</div>
+          <button class="pw-btn" id="pw-gate-btn" onclick="confirmGatePw()" disabled>Öffnen</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  // Archiv-Toolbar
+  const toolbar = `
+    <div class="archiv-topbar">
+      <div style="font-size:13px;font-weight:600">${shifts.length} Schicht${shifts.length!==1?'en':''} archiviert</div>
+      <div class="archiv-actions">
+        <button onclick="printArchiv()" style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background='var(--card)'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Alles exportieren
+        </button>
+        <button onclick="openChangePw()" style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background='var(--card)'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Archiv-Passwort
+        </button>
+        <button onclick="document.getElementById('m-archiv-loeschen').style.display='flex'" style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          Archiv löschen
+        </button>
+      </div>
+    </div>`;
+
+  if(shifts.length === 0) {
+    body.innerHTML = toolbar + '<div class="oempty">Noch keine archivierten Schichten vorhanden</div>';
+    return;
+  }
+
+  // Schichten nach Datum gruppieren (Tag → Monat)
+  const groups = [];
+  shifts.forEach(s => {
+    const dateKey = s.sDate || '';
+    const monthKey = dateKey ? dateKey.slice(0,7) : '';
+    let mg = groups.find(g => g.month === monthKey);
+    if(!mg) { mg = {month:monthKey, days:[]}; groups.push(mg); }
+    let dg = mg.days.find(d => d.day === dateKey);
+    if(!dg) { dg = {day:dateKey, shifts:[]}; mg.days.push(dg); }
+    dg.shifts.push(s);
+  });
+
+  let cardsHtml = '';
+  groups.forEach(mg => {
+    const monthTotal = mg.days.reduce((acc,dg)=>acc+dg.shifts.reduce((a,s)=>a+(s.totalRevenue||0),0),0);
+    const monthLabel = mg.month ? new Date(mg.month+'-01').toLocaleDateString('de-DE',{month:'long',year:'numeric'}) : 'Datum unbekannt';
+    cardsHtml += `<div style="margin:18px 0 8px;padding:10px 14px;background:var(--primary);color:#fff;border-radius:10px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:13px;font-weight:700">${monthLabel}</span>
+      <span style="font-size:13px;font-weight:700">Gesamt: ${fmt(monthTotal)}</span>
+    </div>`;
+    mg.days.forEach(dg => {
+      const dayTotal = dg.shifts.reduce((a,s)=>a+(s.totalRevenue||0),0);
+      const dayLabel = dg.day ? new Date(dg.day+'T00:00:00').toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'}) : 'Datum unbekannt';
+      cardsHtml += `<div style="margin:10px 0 5px;padding:6px 12px;background:var(--accent);border-radius:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border)">
+        <span style="font-size:12px;font-weight:600;color:var(--text)">${dayLabel}</span>
+        <span style="font-size:12px;font-weight:600;color:var(--muted)">Tagessum.: ${fmt(dayTotal)}</span>
+      </div>`;
+      dg.shifts.forEach(s => {
+        const tr = (s.sFrom||s.sTo) ? (s.sFrom||'')+(s.sTo?' – '+s.sTo:'') : '';
+        const archived = s.archivedAt ? new Date(s.archivedAt) : '';
+        const cnt = s.orders ? s.orders.length : 0;
+        const mittBadge = s.mitteilung&&s.mitteilung.trim() ? `<span style="display:inline-block;margin-left:8px;padding:2px 7px;border-radius:20px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;vertical-align:middle">⚠ Mitteilung</span>` : '';
+        const rechnBadge = s.rechnungPending ? `<span style="display:inline-block;margin-left:6px;padding:2px 7px;border-radius:20px;background:${s.rechnungDone?'#e5e7eb':'#fee2e2'};color:${s.rechnungDone?'#6b7280':'#dc2626'};border:1px solid ${s.rechnungDone?'#d1d5db':'#fca5a5'};font-size:10px;font-weight:700;vertical-align:middle">${s.rechnungDone?'✓ Rechnung':'📄 Rechnung offen'}</span>` : '';
+        cardsHtml += `<div class="ocard" style="cursor:pointer;margin-bottom:6px" onclick="openArchivDetail('${s.firestoreId}')">
+          <div class="oin">
+            <div class="oleft" style="width:auto;flex:1">
+              <div class="oname" style="font-size:15px;font-weight:700;margin-bottom:2px">${tr||'Uhrzeit unbekannt'}${mittBadge}${rechnBadge}</div>
+              <div style="font-size:12px;color:var(--muted);font-weight:500;margin-bottom:5px">${esc(s.sName||'Unbekannt')}</div>
+              <div class="ometa"><span class="otot" style="font-size:14px">${fmt(s.totalRevenue||0)}</span></div>
+            </div>
+            <div class="oright" style="max-width:220px">
+              <div class="orow"><span class="orow-n">Anmeldungen</span><span class="orow-p">${cnt}</span></div>
+              <div class="orow"><span class="orow-n">Bar</span><span class="orow-p">${fmt(s.totalBar||0)}</span></div>
+              <div class="orow"><span class="orow-n">EC</span><span class="orow-p">${fmt(s.totalEc||0)}</span></div>
+              <div class="orow" style="margin-top:3px"><span class="orow-n" style="font-size:10px">Archiviert: ${archived?fmtTs(archived):'–'}</span></div>
+            </div>
+            <div class="oacts">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--muted)"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+        </div>`;
+      });
+    });
+  });
+
+  body.innerHTML = toolbar + '<div class="olist">' + cardsHtml + '</div>';
+}
+
+// ── LEADERBOARD TAB ────────────────────────────────────────────────────
+function renderLeaderboardTab() {
+  const body = document.getElementById('mon-body');
+  const entries = mitarbeiter
+    .map(m => {
+      const ratings = Array.isArray(m.ratings) ? m.ratings : [];
+      const count = ratings.length;
+      const avg = count ? ratings.reduce((s,r)=>s+(r.value||0),0)/count : 0;
+      return { name: m.name || m.firestoreId, count, avg };
+    })
+    .filter(e => e.count > 0)
+    .sort((a,b) => b.avg - a.avg || b.count - a.count);
+
+  if(entries.length === 0) {
+    body.innerHTML = '<div class="oempty">Noch keine Bewertungen vorhanden</div>';
+    return;
+  }
+
+  const rows = entries.map((e,i) => `
+    <div class="ocard" style="margin-bottom:6px">
+      <div class="oin">
+        <div class="oleft" style="width:auto;flex:1;display:flex;align-items:center;gap:12px">
+          <div style="width:26px;text-align:center;font-size:13px;font-weight:700;color:var(--muted)">${i+1}.</div>
+          <div>
+            <div class="oname" style="font-size:14px;font-weight:700">${esc(e.name)} <span style="font-size:11px;font-weight:500;color:var(--muted)">(${e.count} Bewertung${e.count!==1?'en':''})</span></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700;padding:0 4px">
+          ${e.avg.toFixed(2)}
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="#f5b301" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+      </div>
+    </div>`).join('');
+
+  body.innerHTML = `<div style="margin-bottom:18px"><div style="font-size:16px;font-weight:700;margin-bottom:4px">Mitarbeiterzufriedenheit</div><div style="font-size:12px;color:var(--muted);line-height:1.5">So hinterlassen Personen die Kasse <span style="font-style:italic">(basierend auf der Ordnung, die die nächste Schicht vorfindet)</span></div></div><div class="olist">${rows}</div>`;
+}
+
+// ── PASSWORT GATE ─────────────────────────────────────────────────────
+function checkGatePw() {
+  const v = document.getElementById('pw-gate-input').value;
+  const ok = (v === archivPw || v === 'MASTER!');
+  const btn = document.getElementById('pw-gate-btn');
+  btn.disabled = !ok; btn.style.opacity = ok ? '1' : '.4'; btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+  document.getElementById('pw-gate-err').style.display = 'none';
+}
+function confirmGatePw() {
+  const v = document.getElementById('pw-gate-input').value;
+  if(v !== archivPw && v !== 'MASTER!') {
+    document.getElementById('pw-gate-err').style.display = 'block'; return;
+  }
+  archivUnlocked = true;
+  renderArchivTab();
+}
+
+// ── ARCHIV DETAIL ─────────────────────────────────────────────────────
+let currentArchivShiftId = null;
+
+function openArchivDetail(firestoreId) {
+  currentArchivShiftId = firestoreId;
+  renderArchivDetail(firestoreId);
+  document.getElementById('m-archiv-detail').style.display = 'flex';
+}
+
+function renderArchivDetail(firestoreId) {
+  const s = shifts.find(x => x.firestoreId === firestoreId);
+  if(!s) return;
+  const d = s.sDate ? new Date(s.sDate).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : null;
+  document.getElementById('ad-title').textContent = `Schicht – ${s.sName||'Unbekannt'}${d?' · '+d:''}`;
+  document.getElementById('ad-schicht').innerHTML = `
+    <div><span style="color:var(--muted);display:block;font-size:10px;margin-bottom:2px">Mitarbeiter</span><strong>${esc(s.sName||'–')}</strong></div>
+    <div><span style="color:var(--muted);display:block;font-size:10px;margin-bottom:2px">Datum</span><strong>${d||'–'}</strong></div>
+    <div><span style="color:var(--muted);display:block;font-size:10px;margin-bottom:2px">Von</span><strong>${esc(s.sFrom||'–')}</strong></div>
+    <div><span style="color:var(--muted);display:block;font-size:10px;margin-bottom:2px">Bis</span><strong>${esc(s.sTo||'–')}</strong></div>`;
+  document.getElementById('ad-kasse').innerHTML = `
+    <div><span style="color:var(--muted);display:block;font-size:10px;margin-bottom:2px">Kasse Start</span><strong>${s.kStart?parseFloat(s.kStart).toFixed(2)+' €':'–'}</strong></div>
+    <div><span style="color:var(--muted);display:block;font-size:10px;margin-bottom:2px">Kasse Ende</span><strong>${s.kEnd?parseFloat(s.kEnd).toFixed(2)+' €':'–'}</strong></div>
+    <div><span style="color:var(--muted);display:block;font-size:10px;margin-bottom:2px">Betrag Umschlag</span><strong>${s.kUmsch?parseFloat(s.kUmsch).toFixed(2)+' €':'–'}</strong></div>
+    ${(()=>{
+      if(!s.kStart||!s.kEnd||!s.kUmsch) return '';
+      const barRev=(s.orders||[]).filter(o=>o.method==='bar').reduce((sum,o)=>sum+(o.total||0),0);
+      const soll=parseFloat(s.kStart)+barRev;
+      const ist=parseFloat(s.kEnd)+parseFloat(s.kUmsch);
+      const diff=soll-ist;
+      const ok=Math.abs(diff)<0.01;
+      return `<div style="grid-column:1/-1;margin-top:4px;padding:7px 10px;border-radius:7px;border:1px solid ${ok?'#bbf7d0':'#fca5a5'};background:${ok?'#f0fdf4':'#fff5f5'};color:${ok?'#15803d':'#dc2626'};font-size:11px;font-weight:600">${ok?'✓ Kasse stimmt':'✗ Kasse stimmt nicht – Differenz: '+(diff>0?diff.toFixed(2)+' € fehlen':Math.abs(diff).toFixed(2)+' € zu viel')+' in der Kasse'}</div>`;
+    })()}`;
+  // Bemerkungen / Mitteilungen + Rechnung-Status
+  const notizenParts=[];
+  if(s.rechnungPending){
+    const done=s.rechnungDone||false;
+    notizenParts.push(`<div style="padding:10px 12px;border-radius:8px;border:1px solid ${done?'#d1d5db':'#fca5a5'};background:${done?'#f3f4f6':'#fff5f5'};margin-bottom:8px;display:flex;align-items:flex-start;gap:10px">
+      <input type="checkbox" id="rechnung-done-cb" ${done?'checked':''} onchange="toggleRechnungDone('${s.firestoreId}',this.checked)" style="width:16px;height:16px;margin-top:2px;cursor:pointer">
+      <div>
+        <div style="font-size:10px;font-weight:700;color:${done?'#6b7280':'#dc2626'};text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">${done?'✓ Rechnung ausgestellt':'📄 Rechnung muss noch ausgestellt werden'}</div>
+        <div style="font-size:12px;color:${done?'#9ca3af':'#991b1b'}">${done?'Abgehakt – Rechnung wurde ausgestellt.':'Bitte Rechnung an Rechnungsadresse(n) schicken.'}</div>
+      </div>
+    </div>`);
+  }
+  if(s.mitteilung&&s.mitteilung.trim()){
+    notizenParts.push(`<div style="padding:10px 12px;border-radius:8px;border:1px solid #fca5a5;background:#fff5f5;margin-bottom:8px"><div style="font-size:10px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">⚠ Wichtige Mitteilung</div><div style="font-size:13px;white-space:pre-wrap">${esc(s.mitteilung)}</div></div>`);
+  }
+  if(s.bemerkung&&s.bemerkung.trim()){
+    notizenParts.push(`<div style="padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--ibg)"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Bemerkungen zur Schicht</div><div style="font-size:13px;white-space:pre-wrap">${esc(s.bemerkung)}</div></div>`);
+  }
+  document.getElementById('ad-notizen').innerHTML=notizenParts.join('');
+  const bar = (s.orders||[]).filter(o=>o.method==='bar');
+  const ec  = (s.orders||[]).filter(o=>o.method==='ec');
+  const rech= (s.orders||[]).filter(o=>o.method==='rechnung');
+  document.getElementById('ad-stats').innerHTML = `
+    <div class="sbox tot"><div class="slbl">Gesamtumsatz</div><div class="sval">${fmt(s.totalRevenue||0)}</div></div>
+    <div class="sbox cas"><div class="slbl">Baranteil</div><div class="sval">${fmt(s.totalBar||0)}</div><div class="ssub">${bar.length} Anmeldung${bar.length!==1?'en':''}</div></div>
+    <div class="sbox ecc"><div class="slbl">EC-Anteil</div><div class="sval">${fmt(s.totalEc||0)}</div><div class="ssub">${ec.length} Anmeldung${ec.length!==1?'en':''}</div></div>
+    ${rech.length>0?`<div class="sbox" style="border-color:#fca5a5;background:#fff5f5"><div class="slbl" style="color:#dc2626">Rechnung</div><div class="sval" style="color:#dc2626">${fmt(s.totalRechnung||0)}</div><div class="ssub">${rech.length} Anmeldung${rech.length!==1?'en':''}</div></div>`:''}`;
+  const ol = document.getElementById('ad-orders');
+  if(!s.orders||s.orders.length===0) {
+    ol.innerHTML = '<div class="oempty">Keine Anmeldungen in dieser Schicht</div>';
+  } else {
+    ol.innerHTML = [...(s.orders||[])].sort((a,b)=>new Date(b.ts)-new Date(a.ts)).map((o,idx) => {
+      const isR=o.method==='rechnung';
+      const discs = (o.discounts||[]).map(d=>`<div class="odisc"><span>${esc(d.label||d.type)}</span><span>-${fmt(d.amount)}</span></div>`).join('');
+      const change = (o.given!=null&&o.change!=null)?`<div class="ochange">Gegeben: ${fmt(o.given)} | Rückgeld: ${fmt(o.change)}</div>`:'';
+      const editedHtml = o.editedTs ? ` <span style="font-style:italic">(bearbeitet ${fmtTs(o.editedTs)})</span>` : '';
+      const invoiceHtml=isR&&o.invoiceAddress?`<div style="margin-top:5px;padding:6px 9px;background:#fee2e2;border-radius:6px;font-size:11px;color:#991b1b;white-space:pre-wrap">📄 <strong>Rechnungsadresse:</strong><br>${esc(o.invoiceAddress)}</div>`:'';
+      const badgeLabel=isR?'Rechnung':o.method==='bar'?'Bar':'EC';
+      return `<div class="ocard" style="${isR?'background:#fff5f5;border-color:#fca5a5':''}"><div class="oin">
+        <div class="oleft">
+          <div class="oname">${esc(o.name)}</div>
+          <div class="ometa"><span class="otot">${fmt(o.total)}</span><span class="badge ${o.method}">${badgeLabel}</span></div>
+          ${change}${invoiceHtml}<div class="otime">${fmtTs(o.ts)}${editedHtml}</div>
+        </div>
+        <div class="oright">
+          ${(o.items||[]).map(it=>`<div class="orow"><span class="orow-n">${esc(it.name)}${it.age?' ('+esc(it.age)+')':''}</span><span class="orow-p">${it.qty} × ${it.price} € = ${fmt(it.qty*it.price)}</span></div>`).join('')}
+          ${discs}
+        </div>
+        <div class="oacts">
+          <button class="icoBtn edit" title="Bearbeiten" onclick="startArchivEdit('${firestoreId}',${idx})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="icoBtn" title="Löschen" onclick="askDelArchivOrder('${firestoreId}',${idx})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </div>
+      </div></div>`;
+    }).join('');
+  }
+}
+
+// ── RECHNUNG ABHAKEN ─────────────────────────────────────────────────
+async function toggleRechnungDone(firestoreId, done) {
+  await window.fbSetDoc(window.fbDoc(window.db,'shifts',firestoreId),{rechnungDone:done},{merge:true});
+  renderParkMitteilungen();
+}
+
+// ── ARCHIV ORDER LÖSCHEN ──────────────────────────────────────────────
+let delArchivShiftId = null, delArchivOrderIdx = null;
+function askDelArchivOrder(shiftId, idx) {
+  delArchivShiftId = shiftId; delArchivOrderIdx = idx;
+  const s = shifts.find(x => x.firestoreId === shiftId);
+  const o = s && s.orders && s.orders[idx];
+  document.getElementById('del-archiv-order-msg').textContent = o
+    ? `Anmeldung von „${o.name}" aus dem Archiv wirklich löschen?`
+    : 'Diese Anmeldung wirklich löschen?';
+  document.getElementById('m-del-archiv-order').style.display = 'flex';
+}
+function cancelDelArchivOrder() {
+  delArchivShiftId = null; delArchivOrderIdx = null;
+  document.getElementById('m-del-archiv-order').style.display = 'none';
+}
+async function confirmDelArchivOrder() {
+  if(delArchivShiftId === null || delArchivOrderIdx === null) return;
+  const btn = document.getElementById('del-archiv-order-btn');
+  btn.textContent = 'Lösche…'; btn.disabled = true;
+  const s = shifts.find(x => x.firestoreId === delArchivShiftId);
+  if(s && s.orders) {
+    const newOrders = s.orders.filter((_,i) => i !== delArchivOrderIdx);
+    const totalRevenue = newOrders.reduce((sum,o)=>sum+o.total,0);
+    const totalBar = newOrders.filter(o=>o.method==='bar').reduce((sum,o)=>sum+o.total,0);
+    const totalEc  = newOrders.filter(o=>o.method==='ec').reduce((sum,o)=>sum+o.total,0);
+    const {firestoreId, ...data} = s;
+    await window.fbSetDoc(window.fbDoc(window.db,'shifts',firestoreId), {...data, orders:newOrders, totalRevenue, totalBar, totalEc});
+  }
+  document.getElementById('m-del-archiv-order').style.display = 'none';
+  btn.textContent = 'Löschen'; btn.disabled = false;
+  delArchivShiftId = null; delArchivOrderIdx = null;
+  toast('Anmeldung aus Archiv gelöscht', '#dc2626');
+}
+
+// ── ARCHIV ORDER BEARBEITEN ───────────────────────────────────────────
+let archivEditShiftId = null, archivEditOrderIdx = null;
+
+function startArchivEdit(shiftId, idx) {
+  const s = shifts.find(x => x.firestoreId === shiftId);
+  const o = s && s.orders && s.orders[idx];
+  if(!o) return;
+  archivEditShiftId = shiftId; archivEditOrderIdx = idx;
+  editId = '__archiv__';
+  editItems = (o.items||[]).map(i=>({...i}));
+  editDiscs = (o.discounts||[]).map(d=>({...d}));
+  editPay = o.method || 'bar';
+  document.getElementById('ed-name').value = o.name || '';
+  setEdPay(editPay);
+  document.getElementById('ed-addcat').value = '';
+  renderEdItems(); renderEdDiscs();
+  document.getElementById('ed-voucher-section').style.display = 'none';
+  document.getElementById('edv-amt').value = '';
+  document.getElementById('edv-pctval').value = '';
+  edVType = 'fixed';
+  document.getElementById('edvt-fixed').classList.add('active');
+  document.getElementById('edvt-pct').classList.remove('active');
+  document.getElementById('edv-fixed').style.display = '';
+  document.getElementById('edv-pct').style.display = 'none';
+  document.getElementById('m-edit').style.display = 'flex';
+}
+
+async function saveEdit() {
+  if(!editId) return;
+  const sub = editItems.reduce((s,it)=>s+it.price*it.qty,0);
+  const dis = editDiscs.reduce((s,d)=>s+d.amount,0);
+  const newTotal = Math.max(0, sub - dis);
+  const name = document.getElementById('ed-name').value.trim();
+
+  if(editId === '__archiv__') {
+    // Archiv-Anmeldung bearbeiten
+    const s = shifts.find(x => x.firestoreId === archivEditShiftId);
+    if(s && s.orders) {
+      const newOrders = s.orders.map((o,i) => i === archivEditOrderIdx
+        ? {...o, name: name||o.name, items:[...editItems], discounts:[...editDiscs], total:newTotal, method:editPay, editedTs:new Date().toISOString()}
+        : o);
+      const totalRevenue = newOrders.reduce((sum,o)=>sum+o.total,0);
+      const totalBar = newOrders.filter(o=>o.method==='bar').reduce((sum,o)=>sum+o.total,0);
+      const totalEc  = newOrders.filter(o=>o.method==='ec').reduce((sum,o)=>sum+o.total,0);
+      const {firestoreId, ...data} = s;
+      await window.fbSetDoc(window.fbDoc(window.db,'shifts',firestoreId), {...data, orders:newOrders, totalRevenue, totalBar, totalEc});
+    }
+    document.getElementById('m-edit').style.display = 'none';
+    editId = null; editItems = []; editDiscs = [];
+    archivEditShiftId = null; archivEditOrderIdx = null;
+    toast('Anmeldung im Archiv gespeichert', '#16a34a');
+  } else {
+    // Aktive Anmeldung bearbeiten
+    const o = orders.find(x => x.id===editId || x.firestoreId===editId);
+    if(o && o.firestoreId) {
+      const updated = {...o, name: name||o.name, items:[...editItems], discounts:[...editDiscs], total:newTotal, method:editPay, editedTs:new Date().toISOString()};
+      const {firestoreId, ...data} = updated;
+      if(data.ts instanceof Date) data.ts = data.ts.toISOString();
+      await window.fbSetDoc(window.fbDoc(window.db,'orders',firestoreId), data);
+    }
+    document.getElementById('m-edit').style.display = 'none';
+    editId = null; editItems = []; editDiscs = [];
+    toast('Anmeldung gespeichert', '#16a34a');
+  }
+}
+
+// ── ARCHIV LÖSCHEN ────────────────────────────────────────────────────
+async function confirmArchivLoeschen() {
+  const btn = document.getElementById('al-del-btn');
+  btn.textContent = 'Lösche…'; btn.disabled = true;
+  const snap = await window.fbGetDocs(window.fbCollection(window.db,'shifts'));
+  const dels = [];
+  snap.forEach(d => dels.push(window.fbDeleteDoc(window.fbDoc(window.db,'shifts',d.id))));
+  await Promise.all(dels);
+  btn.textContent = 'Alles löschen'; btn.disabled = false;
+  document.getElementById('m-archiv-loeschen').style.display = 'none';
+  toast('Archiv wurde gelöscht', '#dc2626');
+}
+
+// ── PASSWORT ÄNDERN ───────────────────────────────────────────────────
+function openChangePw() {
+  document.getElementById('cp-old').value = '';
+  document.getElementById('cp-new').value = '';
+  document.getElementById('cp-new2').value = '';
+  document.getElementById('cp-old-err').style.display = 'none';
+  document.getElementById('cp-new-err').style.display = 'none';
+  document.getElementById('cp-new-section').style.display = 'none';
+  const btn = document.getElementById('cp-save-btn');
+  btn.disabled = true; btn.style.opacity = '.4'; btn.style.cursor = 'not-allowed';
+  document.getElementById('m-change-pw').style.display = 'flex';
+  setTimeout(()=>document.getElementById('cp-old').focus(), 50);
+}
+function checkCpOld() {
+  const v = document.getElementById('cp-old').value;
+  const ok = (v === archivPw || v === 'MASTER!');
+  document.getElementById('cp-new-section').style.display = ok ? '' : 'none';
+  document.getElementById('cp-old-err').style.display = 'none';
+  if(!ok) { const b=document.getElementById('cp-save-btn'); b.disabled=true; b.style.opacity='.4'; b.style.cursor='not-allowed'; }
+  checkCpNew();
+}
+function checkCpNew() {
+  const n1 = document.getElementById('cp-new').value;
+  const n2 = document.getElementById('cp-new2').value;
+  const oldOk = (document.getElementById('cp-old').value===archivPw || document.getElementById('cp-old').value==='MASTER!');
+  const match = (n1.length > 0 && n1 === n2);
+  document.getElementById('cp-new-err').style.display = (n2.length>0&&!match) ? 'block' : 'none';
+  const btn = document.getElementById('cp-save-btn');
+  const ok = oldOk && match;
+  btn.disabled = !ok; btn.style.opacity = ok ? '1' : '.4'; btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+}
+async function saveNewPw() {
+  const newPw = document.getElementById('cp-new').value;
+  if(!newPw) return;
+  await window.fbSetDoc(window.fbDoc(window.db,'config','archiv'), {pw: newPw});
+  archivPw = newPw;
+  document.getElementById('m-change-pw').style.display = 'none';
+  toast('Passwort wurde geändert', '#16a34a');
+}
+
+// ── KASSEN-PASSWORT ÄNDERN ───────────────────────────────────────────
+function openChangeKassenPw() {
+  ['ckp-old','ckp-new','ckp-new2'].forEach(id=>document.getElementById(id).value='');
+  ['ckp-old-err','ckp-new-err'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('ckp-new-section').style.display='none';
+  const btn=document.getElementById('ckp-save-btn');
+  btn.disabled=true;btn.style.opacity='.4';btn.style.cursor='not-allowed';
+  document.getElementById('m-change-kassenpw').style.display='flex';
+  setTimeout(()=>document.getElementById('ckp-old').focus(),50);
+}
+function checkCkpOld() {
+  const v=document.getElementById('ckp-old').value;
+  const ok=(v===kassenPw||v==='MASTER!');
+  document.getElementById('ckp-new-section').style.display=ok?'':'none';
+  document.getElementById('ckp-old-err').style.display='none';
+  if(!ok){const b=document.getElementById('ckp-save-btn');b.disabled=true;b.style.opacity='.4';b.style.cursor='not-allowed';}
+  checkCkpNew();
+}
+function checkCkpNew() {
+  const n1=document.getElementById('ckp-new').value;
+  const n2=document.getElementById('ckp-new2').value;
+  const oldOk=(document.getElementById('ckp-old').value===kassenPw||document.getElementById('ckp-old').value==='MASTER!');
+  const match=(n1.length>0&&n1===n2);
+  document.getElementById('ckp-new-err').style.display=(n2.length>0&&!match)?'block':'none';
+  const btn=document.getElementById('ckp-save-btn');
+  const ok=oldOk&&match;
+  btn.disabled=!ok;btn.style.opacity=ok?'1':'.4';btn.style.cursor=ok?'pointer':'not-allowed';
+}
+async function saveNewKassenPw() {
+  const newPw=document.getElementById('ckp-new').value;
+  if(!newPw)return;
+  await window.fbSetDoc(window.fbDoc(window.db,'config','kassenpw'),{pw:newPw});
+  kassenPw=newPw;
+  document.getElementById('m-change-kassenpw').style.display='none';
+  toast('Kassen-Passwort wurde geändert','#16a34a');
+}
+
+// ── EDIT FUNCTIONS ────────────────────────────────────────────────────
+function buildEdAddCat() {
+  const s = document.getElementById('ed-addcat');
+  if(!s || s.options.length > 1) return; // already built
+  ALL_CATS.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = `${c.name} (${c.age}) – ${c.price}€`;
+    s.appendChild(o);
+  });
+}
+
+function startEdit(id) {
+  const o = orders.find(x => (x.id === id || x.firestoreId === id));
+  if(!o) return;
+  editId = id;
+  editItems = (o.items||[]).map(i=>({...i}));
+  editDiscs = (o.discounts||[]).map(d=>({...d}));
+  editPay = o.method || 'bar';
+  document.getElementById('ed-name').value = o.name || '';
+  setEdPay(editPay);
+  document.getElementById('ed-addcat').value = '';
+  renderEdItems(); renderEdDiscs();
+  document.getElementById('ed-voucher-section').style.display = 'none';
+  document.getElementById('edv-amt').value = '';
+  document.getElementById('edv-pctval').value = '';
+  edVType = 'fixed';
+  document.getElementById('edvt-fixed').classList.add('active');
+  document.getElementById('edvt-pct').classList.remove('active');
+  document.getElementById('edv-fixed').style.display = '';
+  document.getElementById('edv-pct').style.display = 'none';
+  document.getElementById('m-edit').style.display = 'flex';
+}
+
+function setEdPay(p) {
+  editPay = p;
+  const barBtn = document.getElementById('ed-bar');
+  const ecBtn  = document.getElementById('ed-ec');
+  if(p === 'bar') {
+    barBtn.style.cssText = 'background:#16a34a;color:#fff;border-color:#16a34a';
+    ecBtn.style.cssText = '';
+  } else {
+    ecBtn.style.cssText = 'background:#2563eb;color:#fff;border-color:#2563eb';
+    barBtn.style.cssText = '';
+  }
+}
+
+function edAddCat() {
+  const v = document.getElementById('ed-addcat').value; if(!v) return;
+  const cat = ALL_CATS.find(c => c.id === v); if(!cat) return;
+  const ex = editItems.find(i => i.id === cat.id);
+  if(ex) ex.qty++; else editItems.push({type:'cat',id:cat.id,name:cat.name,age:cat.age,price:cat.price,qty:1});
+  document.getElementById('ed-addcat').value = '';
+  renderEdItems();
+}
+
+function renderEdItems() {
+  const el = document.getElementById('ed-items');
+  if(editItems.length === 0) { el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:6px">Keine Artikel</div>'; return; }
+  el.innerHTML = editItems.map((it,i) => `
+    <div class="edit-item">
+      <div class="edit-item-info"><div class="edit-item-name">${esc(it.name)}</div><div class="edit-item-age">${esc(it.age||'')}</div></div>
+      <div class="qrow">
+        <button class="qbtn" onclick="edQty(${i},${it.qty-1})">−</button>
+        <input class="qin" type="number" min="1" value="${it.qty}" onchange="edQty(${i},this.value)">
+        <button class="qbtn" onclick="edQty(${i},${it.qty+1})">+</button>
+      </div>
+      <div style="text-align:right;min-width:60px"><div style="font-size:10px;color:var(--muted)">${it.qty}×${it.price}€</div><div style="font-size:12px;font-weight:600">${fmt(it.qty*it.price)}</div></div>
+      <button class="icoBtn" onclick="edRemove(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+    </div>`).join('');
+}
+
+function edQty(i,v) { const q=parseInt(v); if(!isNaN(q)&&q>0){editItems[i].qty=q;}else if(q<=0){editItems.splice(i,1);} renderEdItems(); }
+function edRemove(i) { editItems.splice(i,1); renderEdItems(); }
+
+function renderEdDiscs() {
+  const el = document.getElementById('ed-discounts');
+  if(editDiscs.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = editDiscs.map((d,i) => `
+    <div class="edit-disc-row">
+      <span>${esc(d.label||d.type)}</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-weight:600">-${fmt(d.amount)}</span>
+        <button class="dremove" onclick="edRemoveDisc(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      </div>
+    </div>`).join('');
+}
+function edRemoveDisc(i) { editDiscs.splice(i,1); renderEdDiscs(); }
+
+function toggleEdVoucher() {
+  const el = document.getElementById('ed-voucher-section');
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+  if(el.style.display !== 'none') {
+    document.getElementById('edv-items').innerHTML = editItems.map((it,i) => `
+      <label class="chkrow"><input type="checkbox" value="${i}" style="width:12px;height:12px">
+      ${esc(it.name)} – ${it.qty}× à ${it.price}€</label>`).join('');
+  }
+}
+function setEdVType(t) {
+  edVType = t;
+  document.getElementById('edvt-fixed').classList.toggle('active', t==='fixed');
+  document.getElementById('edvt-pct').classList.toggle('active', t==='percent');
+  document.getElementById('edv-fixed').style.display = t==='fixed' ? '' : 'none';
+  document.getElementById('edv-pct').style.display = t==='percent' ? '' : 'none';
+}
+function applyEdVoucher() {
+  if(edVType === 'fixed') {
+    const amt = parseFloat(document.getElementById('edv-amt').value);
+    if(isNaN(amt)||amt<=0) return;
+    editDiscs.push({type:'voucher',amount:amt,label:'Gutschein eingelöst'});
+  } else {
+    const pct = parseFloat(document.getElementById('edv-pctval').value);
+    if(isNaN(pct)||pct<=0) return;
+    const checked = [...document.getElementById('edv-items').querySelectorAll('input:checked')].map(e=>parseInt(e.value));
+    if(checked.length===0) return;
+    let total=0; checked.forEach(idx=>{const it=editItems[idx];if(it)total+=it.price*it.qty*pct/100;});
+    editDiscs.push({type:'voucher',amount:total,label:`Gutschein (${pct}%) eingelöst`});
+  }
+  document.getElementById('ed-voucher-section').style.display = 'none';
+  document.getElementById('edv-amt').value = ''; document.getElementById('edv-pctval').value = '';
+  renderEdDiscs();
+}
+function cancelEdVoucher() {
+  document.getElementById('ed-voucher-section').style.display = 'none';
+  document.getElementById('edv-amt').value = ''; document.getElementById('edv-pctval').value = '';
+}
+
+
+function cancelEdit() {
+  document.getElementById('m-edit').style.display = 'none';
+  editId = null; editItems = []; editDiscs = [];
+  archivEditShiftId = null; archivEditOrderIdx = null;
+}
+
+// ── DELETE ORDER ──────────────────────────────────────────────────────
+let delOrderId = null;
+function askDelOrder(id) {
+  delOrderId = id;
+  const o = orders.find(x => x.id===id || x.firestoreId===id);
+  document.getElementById('del-order-msg').textContent = o
+    ? `Anmeldung von „${o.name}" wirklich löschen?`
+    : 'Diese Anmeldung wirklich löschen?';
+  document.getElementById('m-del-order').style.display = 'flex';
+}
+function cancelDelOrder() {
+  delOrderId = null;
+  document.getElementById('m-del-order').style.display = 'none';
+}
+async function confirmDelOrder() {
+  if(!delOrderId) return;
+  const btn = document.getElementById('del-order-btn');
+  btn.textContent = 'Lösche…'; btn.disabled = true;
+  const o = orders.find(x => x.id===delOrderId || x.firestoreId===delOrderId);
+  if(o && o.firestoreId) {
+    await window.fbDeleteDoc(window.fbDoc(window.db, 'orders', o.firestoreId));
+  }
+  document.getElementById('m-del-order').style.display = 'none';
+  delOrderId = null;
+  btn.textContent = 'Löschen'; btn.disabled = false;
+  toast('Anmeldung gelöscht', '#dc2626');
+}
+
+// ── NEW ORDER ─────────────────────────────────────────────────────────
+let noItems = [], noDiscs = [], noPay = 'bar', noVType = 'fixed';
+
+function openNewOrder() {
+  noItems = []; noDiscs = []; noPay = 'bar'; noVType = 'fixed';
+  document.getElementById('no-name').value = '';
+  setNoPay('bar');
+  document.getElementById('no-addcat').value = '';
+  document.getElementById('no-voucher-section').style.display = 'none';
+  document.getElementById('nov-amt').value = '';
+  document.getElementById('nov-pctval').value = '';
+  document.getElementById('novt-fixed').classList.add('active');
+  document.getElementById('novt-pct').classList.remove('active');
+  document.getElementById('nov-fixed').style.display = '';
+  document.getElementById('nov-pct').style.display = 'none';
+  renderNoItems(); renderNoDiscs(); updNoSaveBtn();
+  buildNoAddCat();
+  document.getElementById('no-total-row').style.display = 'none';
+  document.getElementById('m-new-order').style.display = 'flex';
+  setTimeout(() => document.getElementById('no-name').focus(), 50);
+}
+function buildNoAddCat() {
+  const s = document.getElementById('no-addcat');
+  if(s.options.length > 1) return;
+  ALL_CATS.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = `${c.name} (${c.age}) – ${c.price}€`;
+    s.appendChild(o);
+  });
+}
+function cancelNewOrder() {
+  document.getElementById('m-new-order').style.display = 'none';
+  noItems = []; noDiscs = [];
+}
+function setNoPay(p) {
+  noPay = p;
+  const barBtn = document.getElementById('no-bar');
+  const ecBtn  = document.getElementById('no-ec');
+  if(p === 'bar') {
+    barBtn.style.cssText = 'background:#16a34a;color:#fff;border-color:#16a34a';
+    ecBtn.style.cssText = '';
+  } else {
+    ecBtn.style.cssText = 'background:#2563eb;color:#fff;border-color:#2563eb';
+    barBtn.style.cssText = '';
+  }
+}
+function noAddCat() {
+  const v = document.getElementById('no-addcat').value; if(!v) return;
+  const cat = ALL_CATS.find(c => c.id === v); if(!cat) return;
+  const ex = noItems.find(i => i.id === cat.id);
+  if(ex) ex.qty++; else noItems.push({type:'cat',id:cat.id,name:cat.name,age:cat.age,price:cat.price,qty:1});
+  document.getElementById('no-addcat').value = '';
+  renderNoItems(); updNoSaveBtn();
+}
+function renderNoItems() {
+  const el = document.getElementById('no-items');
+  if(noItems.length === 0) { el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:6px">Keine Artikel</div>'; return; }
+  el.innerHTML = noItems.map((it,i) => `
+    <div class="edit-item">
+      <div class="edit-item-info"><div class="edit-item-name">${esc(it.name)}</div><div class="edit-item-age">${esc(it.age||'')}</div></div>
+      <div class="qrow">
+        <button class="qbtn" onclick="noQty(${i},${it.qty-1})">−</button>
+        <input class="qin" type="number" min="1" value="${it.qty}" onchange="noQty(${i},this.value)">
+        <button class="qbtn" onclick="noQty(${i},${it.qty+1})">+</button>
+      </div>
+      <div style="text-align:right;min-width:60px"><div style="font-size:10px;color:var(--muted)">${it.qty}×${it.price}€</div><div style="font-size:12px;font-weight:600">${fmt(it.qty*it.price)}</div></div>
+      <button class="icoBtn" onclick="noRemove(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+    </div>`).join('');
+  updNoTotal();
+}
+function noQty(i,v) { const q=parseInt(v); if(!isNaN(q)&&q>0){noItems[i].qty=q;}else if(q<=0){noItems.splice(i,1);} renderNoItems(); updNoSaveBtn(); }
+function noRemove(i) { noItems.splice(i,1); renderNoItems(); updNoSaveBtn(); }
+function renderNoDiscs() {
+  const el = document.getElementById('no-discounts');
+  if(noDiscs.length === 0) { el.innerHTML = ''; updNoTotal(); return; }
+  el.innerHTML = noDiscs.map((d,i) => `
+    <div class="edit-disc-row">
+      <span>${esc(d.label||d.type)}</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-weight:600">-${fmt(d.amount)}</span>
+        <button class="dremove" onclick="noRemoveDisc(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      </div>
+    </div>`).join('');
+  updNoTotal();
+}
+function noRemoveDisc(i) { noDiscs.splice(i,1); renderNoDiscs(); }
+function updNoTotal() {
+  const sub = noItems.reduce((s,it)=>s+it.price*it.qty,0);
+  const dis = noDiscs.reduce((s,d)=>s+d.amount,0);
+  const tot = Math.max(0, sub-dis);
+  const row = document.getElementById('no-total-row');
+  if(noItems.length > 0) {
+    row.style.display = '';
+    row.innerHTML = `Gesamtsumme: <span style="font-size:16px">${fmt(tot)}</span>`;
+  } else { row.style.display = 'none'; }
+}
+function updNoSaveBtn() {
+  const name = document.getElementById('no-name').value.trim();
+  const ok = noItems.length > 0 && name.length > 0;
+  const btn = document.getElementById('no-save-btn');
+  btn.disabled = !ok; btn.style.opacity = ok ? '1' : '.4'; btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+}
+function toggleNoVoucher() {
+  const el = document.getElementById('no-voucher-section');
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+  if(el.style.display !== 'none') {
+    document.getElementById('nov-items').innerHTML = noItems.map((it,i) => `
+      <label class="chkrow"><input type="checkbox" value="${i}" style="width:12px;height:12px">
+      ${esc(it.name)} – ${it.qty}× à ${it.price}€</label>`).join('');
+  }
+}
+function setNoVType(t) {
+  noVType = t;
+  document.getElementById('novt-fixed').classList.toggle('active', t==='fixed');
+  document.getElementById('novt-pct').classList.toggle('active', t==='percent');
+  document.getElementById('nov-fixed').style.display = t==='fixed' ? '' : 'none';
+  document.getElementById('nov-pct').style.display = t==='percent' ? '' : 'none';
+}
+function applyNoVoucher() {
+  if(noVType === 'fixed') {
+    const amt = parseFloat(document.getElementById('nov-amt').value);
+    if(isNaN(amt)||amt<=0) return;
+    noDiscs.push({type:'voucher',amount:amt,label:'Gutschein eingelöst'});
+  } else {
+    const pct = parseFloat(document.getElementById('nov-pctval').value);
+    if(isNaN(pct)||pct<=0) return;
+    const checked = [...document.getElementById('nov-items').querySelectorAll('input:checked')].map(e=>parseInt(e.value));
+    if(checked.length===0) return;
+    let total=0; checked.forEach(idx=>{const it=noItems[idx];if(it)total+=it.price*it.qty*pct/100;});
+    noDiscs.push({type:'voucher',amount:total,label:`Gutschein (${pct}%) eingelöst`});
+  }
+  document.getElementById('no-voucher-section').style.display = 'none';
+  document.getElementById('nov-amt').value = ''; document.getElementById('nov-pctval').value = '';
+  renderNoDiscs();
+}
+function cancelNoVoucher() {
+  document.getElementById('no-voucher-section').style.display = 'none';
+  document.getElementById('nov-amt').value = ''; document.getElementById('nov-pctval').value = '';
+}
+async function saveNewOrder() {
+  const name = document.getElementById('no-name').value.trim();
+  if(!name || noItems.length === 0) return;
+  const btn = document.getElementById('no-save-btn');
+  btn.textContent = 'Speichere…'; btn.disabled = true;
+  const sub = noItems.reduce((s,it)=>s+it.price*it.qty,0);
+  const dis = noDiscs.reduce((s,d)=>s+d.amount,0);
+  const order = {
+    id: Date.now().toString(),
+    name,
+    items: noItems.map(i=>({...i})),
+    discounts: noDiscs.map(d=>({...d})),
+    total: Math.max(0, sub-dis),
+    method: noPay,
+    ts: new Date().toISOString(),
+    given: null,
+    change: null
+  };
+  await window.fbAddDoc(window.fbCollection(window.db,'orders'), order);
+  document.getElementById('m-new-order').style.display = 'none';
+  noItems = []; noDiscs = [];
+  btn.textContent = 'Anmeldung speichern'; btn.disabled = false;
+  toast('Anmeldung hinzugefügt', '#16a34a');
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────
+function fmt(v){ return (v<0?'-':'')+Math.abs(v).toFixed(2).replace('.',',')+' €'; }
+function fmtTs(d){if(!d)return'–';const dt=d&&d.toDate?d.toDate():d instanceof Date?d:new Date(d);if(!dt||isNaN(dt))return'–';return dt.toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(msg, bg) {
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.cssText = `position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:${bg};color:#fff;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.18);pointer-events:none`;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 3000);
+}
+
+// ── PDF / DRUCK FUNKTIONEN ────────────────────────────────────────────
+
+function printAnmeldungen() {
+  const sd = sessionData;
+  const dateDisp = sd.sDate ? new Date(sd.sDate+'T00:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '–';
+  const bar = orders.filter(o=>o.method==='bar');
+  const ec  = orders.filter(o=>o.method==='ec');
+  const tot = orders.reduce((s,o)=>s+o.total,0);
+
+  const infoFields = [
+    ['Mitarbeiter', sd.sName||'–'], ['Datum', dateDisp],
+    ['Von', sd.sFrom||'–'],         ['Bis',  sd.sTo||'–'],
+  ];
+  const kasseFields = [
+    ['Kasse Start', sd.kStart ? parseFloat(sd.kStart).toFixed(2)+' €' : '–'],
+    ['Kasse Ende',  sd.kEnd   ? parseFloat(sd.kEnd).toFixed(2)+' €'   : '–'],
+    ['Umschlag',    sd.kUmsch ? parseFloat(sd.kUmsch).toFixed(2)+' €' : '–'],
+  ];
+
+  const html = `
+    <div class="pr-page">
+      <div class="pr-header">
+        <div class="pr-title">Kletterwald Paderborn – Aktuelle Schicht</div>
+        <div class="pr-sub">Erstellt: ${new Date().toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+      <div class="pr-info-grid">
+        ${infoFields.map(([l,v])=>`<div class="pr-info-cell"><span class="lbl">${escP(l)}</span><span class="val">${escP(v)}</span></div>`).join('')}
+      </div>
+      <div class="pr-kasse-grid">
+        ${kasseFields.map(([l,v])=>`<div class="pr-info-cell"><span class="lbl">${escP(l)}</span><span class="val">${escP(v)}</span></div>`).join('')}
+      </div>
+      ${buildPrKasseCheck(sd.kStart, sd.kEnd, sd.kUmsch, bar.reduce((s,o)=>s+o.total,0))}
+      ${buildPrStats(tot, bar, ec)}
+      <div class="pr-section-lbl">Anmeldungen (${orders.length})</div>
+      <div class="pr-olist">
+        ${orders.length===0 ? '<div style="color:#999;font-style:italic;font-size:10px">Keine Anmeldungen vorhanden.</div>' : orders.map(o=>buildPrOrder(o)).join('')}
+      </div>
+    </div>`;
+
+  triggerPrint(html);
+}
+
+function printArchiv() {
+  if(shifts.length === 0) { toast('Keine archivierten Schichten vorhanden', '#888'); return; }
+
+  const html = shifts.map((s, idx) => {
+    const d = s.sDate ? new Date(s.sDate).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '–';
+    const bar = (s.orders||[]).filter(o=>o.method==='bar');
+    const ec  = (s.orders||[]).filter(o=>o.method==='ec');
+    const infoFields = [
+      ['Mitarbeiter', s.sName||'–'], ['Datum', d],
+      ['Von', s.sFrom||'–'],         ['Bis',  s.sTo||'–'],
+    ];
+    const kasseFields = [
+      ['Kasse Start', s.kStart ? parseFloat(s.kStart).toFixed(2)+' €' : '–'],
+      ['Kasse Ende',  s.kEnd   ? parseFloat(s.kEnd).toFixed(2)+' €'   : '–'],
+      ['Umschlag',    s.kUmsch ? parseFloat(s.kUmsch).toFixed(2)+' €' : '–'],
+    ];
+    const isLast = idx === shifts.length - 1;
+    return `
+      <div class="${isLast ? '' : 'pr-page'}">
+        <div class="pr-header">
+          <div class="pr-title">Kletterwald Paderborn – Archiv</div>
+          <div class="pr-sub">Schicht: ${escP(s.sName||'Unbekannt')} · ${escP(d)}</div>
+        </div>
+        <div class="pr-info-grid">
+          ${infoFields.map(([l,v])=>`<div class="pr-info-cell"><span class="lbl">${escP(l)}</span><span class="val">${escP(v)}</span></div>`).join('')}
+        </div>
+        <div class="pr-kasse-grid">
+          ${kasseFields.map(([l,v])=>`<div class="pr-info-cell"><span class="lbl">${escP(l)}</span><span class="val">${escP(v)}</span></div>`).join('')}
+        </div>
+        ${buildPrKasseCheck(s.kStart, s.kEnd, s.kUmsch, bar.reduce((sum,o)=>sum+o.total,0))}
+        ${buildPrStats(s.totalRevenue||0, bar, ec)}
+        <div class="pr-section-lbl">Anmeldungen (${(s.orders||[]).length})</div>
+        <div class="pr-olist">
+          ${(!s.orders||s.orders.length===0)
+            ? '<div style="color:#999;font-style:italic;font-size:10px">Keine Anmeldungen in dieser Schicht.</div>'
+            : s.orders.map(o=>buildPrOrder(o)).join('')}
+        </div>
+      </div>`;
+  }).join('');
+
+  triggerPrint(html);
+}
+
+function escP(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function buildPrKasseCheck(kStart, kEnd, kUmsch, barRevenue) {
+  if(!kStart || !kEnd || !kUmsch) return '';
+  const soll = parseFloat(kStart) + barRevenue;
+  const ist  = parseFloat(kEnd) + parseFloat(kUmsch);
+  const diff = soll - ist;
+  const ok   = Math.abs(diff) < 0.01;
+  const color = ok ? '#166534' : '#991b1b';
+  const bg    = ok ? '#f0fdf4' : '#fef2f2';
+  const border= ok ? '#bbf7d0' : '#fecaca';
+  const msg   = ok
+    ? '✓ Kasse stimmt'
+    : `✗ Kasse stimmt nicht – Differenz: ${diff>0 ? diff.toFixed(2)+' € fehlen' : Math.abs(diff).toFixed(2)+' € zu viel'} in der Kasse`;
+  return `<div style="margin:8px 0 10px;padding:8px 11px;border-radius:7px;border:1px solid ${border};background:${bg};color:${color};font-size:10px;font-weight:600">${msg}</div>`;
+}
+function fmtP(v){ return (v<0?'-':'')+Math.abs(v).toFixed(2).replace('.',',')+' €'; }
+
+function buildPrStats(tot, bar, ec) {
+  const barTot = bar.reduce((s,o)=>s+o.total,0);
+  const ecTot  = ec.reduce((s,o)=>s+o.total,0);
+  return `
+    <div class="pr-stats">
+      <div class="pr-stat tot"><span class="lbl">Gesamtumsatz</span><span class="val">${fmtP(tot)}</span></div>
+      <div class="pr-stat cas"><span class="lbl">Bar</span><div class="val-row"><span class="val">${fmtP(barTot)}</span><span class="sub">${bar.length} Anmeldung${bar.length!==1?'en':''}</span></div></div>
+      <div class="pr-stat ecc"><span class="lbl">EC</span><div class="val-row"><span class="val">${fmtP(ecTot)}</span><span class="sub">${ec.length} Anmeldung${ec.length!==1?'en':''}</span></div></div>
+    </div>`;
+}
+
+function buildPrOrder(o) {
+  const discs = (o.discounts||[]).map(d =>
+    `<div class="pr-odisc"><span>${escP(d.label||d.type)}</span><span>-${fmtP(d.amount)}</span></div>`).join('');
+  const change = (o.given!=null&&o.change!=null)
+    ? `<div class="pr-ochange">Gegeben: ${fmtP(o.given)} | Rückgeld: ${fmtP(o.change)}</div>` : '';
+  const ts = fmtTs(o.ts);
+  const editedNote = o.editedTs ? ` <span style="font-style:italic">(bearbeitet ${fmtTs(o.editedTs)})</span>` : '';
+  return `
+    <div class="pr-ocard">
+      <div class="pr-oin">
+        <div class="pr-oleft">
+          <div class="pr-oname">${escP(o.name)}</div>
+          <div class="pr-ometa">
+            <span class="pr-otot">${fmtP(o.total)}</span>
+            <span class="pr-badge ${o.method}">${o.method==='bar'?'Bar':'EC'}</span>
+          </div>
+          ${change}
+          <div class="pr-otime">${ts}${editedNote}</div>
+        </div>
+        <div class="pr-oright">
+          ${(o.items||[]).map(it=>`<div class="pr-orow"><span class="pr-orow-n">${escP(it.name)}${it.age?' ('+escP(it.age)+')':''}</span><span class="pr-orow-p">${it.qty} × ${it.price} € = ${fmtP(it.qty*it.price)}</span></div>`).join('')}
+          ${discs}
+        </div>
+      </div>
+    </div>`;
+}
+
+function triggerPrint(html) {
+  document.getElementById('print-area').innerHTML = html;
+  window.print();
+  setTimeout(() => { document.getElementById('print-area').innerHTML = ''; }, 1500);
+}
+
+</script>
+
+<!-- ── PRINT AREA (nur @media print sichtbar) ── -->
+<div id="print-area"></div>
+
+</body>
+</html>
